@@ -1,0 +1,121 @@
+# This scenario will test,
+# - 3 nodes, `n0`, `n1`, `n2`
+# - proposer fixed to `n0`
+# - threshold is 60; means only 2 nodes can make consensus
+# - `n0`: *init* before *run*
+# - `n0` and `n1` start
+# - `n1` will sync
+# - `n2` starts later
+# - `n2` back to online and stores blocks.
+vars: |
+    {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
+
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok-0112:0.0.1" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG-0113:0.0.1" }}
+
+hosts:
+    - weight: 2
+      host: 172.17.0.1
+      local: true
+
+storage: mongodb://127.0.0.1:27017/contest
+node-config:
+    common: |
+        {{ SetVar "Self.Address" ( printf "%s-010a:0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "quic://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
+        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
+
+        address: {{ .Self.Address }}
+        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
+        storage:
+            uri: {{ .Self.StorageURI }}
+            blockfs:
+                path: /data/blockfs
+        network-id: {{ .NetworkID }}
+        network:
+            bind: quic://0.0.0.0:54321
+            url: {{ .Self.NetworkURL }}
+
+        policy:
+            threshold: 60
+
+        genesis-operations:
+            - type: genesis-account
+              account-keys:
+                keys:
+                    - privatekey: {{ .Account.Genesis.Privatekey }}
+                      publickey: {{ .Account.Genesis.Publickey }}
+                      weight: 100
+                threshold: 100
+              balance: "99999999999999999999"
+
+        _nodes-config:
+            address: {{ .Self.Address }}
+            publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
+            url: {{ .Self.NetworkURL }}
+
+    n0: |
+        suffrage:
+            type: fixed-suffrage
+            proposer: n0-010a:0.0.1
+    n1: |
+        suffrage:
+            type: fixed-suffrage
+            proposer: n0-010a:0.0.1
+    n2: |
+        suffrage:
+            type: fixed-suffrage
+            proposer: n0-010a:0.0.1
+
+nodes-config: |
+    nodes:{{ range $node, $config := .NodesConfig }}
+        - address: {{ index $config "address" }}
+          publickey: {{ index $config "publickey" }}
+          url: {{ index $config "url" }}{{ end }}
+
+sequences:
+    - condition: >
+        {"m": "contest ready"}
+      action:
+          name: init-nodes
+          args:
+              - n0
+
+    - condition: >
+        {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}
+
+    - condition: >
+        {"node": "n0", "x.m": "genesis block created"}
+    - condition: >
+        {"node": "n0", "x.m": "genesis info saved"}
+      action:
+          name: start-nodes
+          args:
+              - n0
+              - n1
+
+    - condition: >
+        {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+    - condition: >
+        {"node": "n1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+      action:
+          name: start-nodes
+          args:
+              - n2
+
+    - condition: >
+        {"node": "n2", "x.states.from": "BOOTING", "x.states.to": "SYNCING"}
+      register:
+          type: last_match
+          to: n2_to_syncing
+
+    - condition: >
+        {"_id": {"$gt": "{{ .Register.n2_to_syncing._id }}" }, "node": "n2", "x.states.from": "SYNCING", "x.states.to": "CONSENSUS"}
+      register:
+          type: last_match
+          to: n2_back_to_consensus
+
+    - condition: >
+        {"_id": {"$gt": "{{ .Register.n2_back_to_consensus._id }}" }, "node": "n2", "x.m": "new block stored"}

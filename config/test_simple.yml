@@ -1,0 +1,101 @@
+storage: mongodb://127.0.0.1:27017/contest
+hosts:
+    - weight: 1
+      ssh:
+          host: localhost:22
+          user: ubuntu
+          key: |
+            -----BEGIN RSA PRIVATE KEY-----
+            MIIEpAIBAAKCAQEAx0yz3QRFewa8zuVkwsAZyC9UCnEfkCZJ6d2r8moGLraCkZpo
+            lrWi1R8EiY0+lA//ypMx1onMY6vrF2vCfZwzGPJWxug1NlBUIA/ucpY7Jo0bH0U/
+            bA6Mkv8TQxhzPcssx0Z9Gal1TKJ0VjmMLUw96R/5DRe1mvgUnD7TJFuvmHOSCQFg
+            Zv5NpTgT/VHXKpZ9URbXwmfIwcrr2qknJAkZEZOTob9e9Qj17xWkfRC59pHkE7yo
+            2F/F6DHMoDBJqcJORTUUeTLDgs0dvAGY8W/F4kM8GwTCuGxb4W7T/SO6RvOHgN8Q
+            Pak6vOR33uLhJOMcFeTyHAOvkP76LZ8nj0l82wIDAQABAoIBAEcM7UJp92s4p68K
+            0LUtTwOy+78NPTdirw8U2+v8KGAW6M2HwqmX74kTGcb/98NJQOOzPh1B2v/dll4v
+            KJMnUIAgRRd8SRwn3xXfGB75t/SycWzgfw/C0BLHpNJSsSLigAA6/PZdF1hOwjLL
+            KVIs0BWANIWaYj/xGUfqjdN0bFFooSPOxDE63ruclY/87tviGKhqV0SlEw691TYv
+            mr/a0n7DwWmif7sva1aWtldTbPahrrtyrsXJJz9ED+nqayRKvUmvYdnEEUqSkC9T
+            2x+YHduURea46dpWU6cqSDPY7KwZOxcc/aIjfm0OeKJ5zfkj8Ni95wru+BXXn+ER
+            42P4W8ECgYEA5APk+kLc8++uUy0/KGLn/96KP4VU0ePcRHqNbcbVUPr6TcCsHyjN
+            Oyn7AY/xccK+6yaV6JxM2KYBAVEdQQYLkXAOq9BvYpIUpU9zkwSQNeAD15iF3kqN
+            zhn7LPxXP4P+cFbjUi1ge0cqW5wiioT3CCiEhcXR0wA2u9kuK6xKULkCgYEA38KU
+            tQgiZxflV0/vogRfgX72qYSZCavTszV0YMsbH9vM8cIAhQcakV/LeQEWpQ059BfH
+            1raePrr9CstNLpvZFODutViJZ4eI4v5IZbIbrcV6gCHpWC/7aiyhMlpqNhJaYtnz
+            zSZnrzGQf718tOkYGnM9zSTSgJr0GLe8id6SqDMCgYEAv5d2I8NjHaXb+RAf7bON
+            9bXsvIswRl0MjI3doMxeGfmJsSOgfV4vdPNFcn6dBlX5TmXRuO78s15poc2ioyyN
+            M9vQuBYgQdc1eeJU3sgK1PoywEns0mga13+FSruOJFSoy4R25moyk+Osd+WuMG6h
+            lD1XfYBHWuDnHNjUruXKXCECgYA0amhbX+RvMfHPWjJQSaX1t8AgRadz1IRq3oK8
+            idd4xwxjNYbZoqhelYocdlzPnSGORGPTsEOxfiv4c1dJK8jWUzqX0H2feuheBCMB
+            b498TV481bTLq7HBVWMNYJCwyevSbCvoSq7PI1UuFz03Q8MZrxUzEQUeiy3S/Hd1
+            9GV2cQKBgQCPoBUoGh2RgvdKyfV+8hnXRcfgf5EEeBwN77xm4gyTIh2/1AYXMrEz
+            mcDVxXw9zpsWq/Xxs84OoArVL2mZj6wSnDyGjHCBpQiWRlFJ/j0soGmgLb3cZxGa
+            +Msh98PiCWJ/aDaQrUak1Y1z4OtJZR7OgC+kaXanm7RtKPL3bS+bdA==
+            -----END RSA PRIVATE KEY-----
+
+node-config:
+    common: |
+        # address: mc-node0-010a:0.0.1
+        # privatekey: KxaTHDAQnmFeWWik5MqWXBYkhvp5EpWbsZzXeHDdTDb5NE1dVw8w-0112:0.0.1
+        storage:
+            uri: mongodb://n0:27017/contest_{{ .Node.Name }}
+            blockfs:
+                path: /tmp/blockfs
+        network-id: mitum contest; Sat 26 Dec 2020 05:29:13 AM KST
+        network:
+            bind: quic://0.0.0.0:54321
+            url: quic://{{ .Node.Host }}:54321
+
+        genesis-operations:
+            - type: genesis-account
+              account-keys:
+                keys:
+                    - publickey: 04b96826d72457a38aa9a2298c3f435f655c28a7d8e94b4e3adf772ac11e3101cbecf9e755312f8a61bd565c182f0d9d67d24f1590ddd2fef1d0af126b5bdfa5a7-0115:0.0.1
+                      # privatekey: c741259e1444ce46e08c2489f3112fb8f0b9f85cb11c84ced9d948cef259ce74-0114:0.0.1
+                      weight: 100
+                threshold: 100
+              balance: "99999999999999999999"
+
+        policy:
+            threshold: 67
+            max-operations-in-seal: 10
+            max-operations-in-proposal: 100
+            timeout-waiting-proposal: 5s
+            interval-broadcasting-init-ballot: 1s
+            interval-broadcasting-proposal: 1s
+            wait-broadcasting-accept-ballot: 1s
+            interval-broadcasting-accept-ballot: 1s
+            timespan-valid-ballot: 1m0s
+            timeout-process-proposal: 10s
+
+        # nodes:
+
+        # fee-amount:
+        #     type: fixed
+        #     amount: 1
+
+        # digest:
+        #     storage: mongodb://127.0.0.1:27017/mc_digest
+        #     network:
+        #         bind: https://localhost:54322
+        #         url: https://localhost:54322
+    n0:
+    n1:
+    n2:
+
+sequences:
+    - condition: >
+        {"module": "contest-containers", "m": "ready"}
+      action:
+          name: start-nodes
+          args:
+              - n0
+              - n1
+              - n2
+
+    - condition: >
+        {"_node": "n0", "m": "new block stored", "block.height": 4, "block.round": 0}
+    - condition: >
+        {"_node": "n1", "m": "new block stored", "block.height": 4, "block.round": 0}
+    - condition: >
+        {"_node": "n2", "m": "new block stored", "block.height": 4, "block.round": 0}
