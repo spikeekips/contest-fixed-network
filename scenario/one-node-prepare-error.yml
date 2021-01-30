@@ -10,6 +10,8 @@ vars: |
     {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok-0112:0.0.1" }}
     {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG-0113:0.0.1" }}
 
+    {{ SetVar "CID" "MCC" }}
+
 hosts:
     - weight: 2
       host: 172.17.0.1
@@ -39,14 +41,19 @@ node-config:
             threshold: 100
 
         genesis-operations:
-            - type: genesis-account
+            - type: genesis-currencies
               account-keys:
                 keys:
-                    - privatekey: {{ .Account.Genesis.Privatekey }}
-                      publickey: {{ .Account.Genesis.Publickey }}
+                    - publickey: {{ .Account.Genesis.Publickey }}
+                      privatekey: {{ .Account.Genesis.Privatekey }}
                       weight: 100
                 threshold: 100
-              balance: "99999999999999999999"
+              currencies:
+                  - currency: {{ .CID }}
+                    balance: "99999999999999999999"
+                    feeer:
+                      type: fixed
+                      amount: 1
 
         _nodes-config:
             address: {{ .Self.Address }}
@@ -80,8 +87,6 @@ sequences:
 
     - condition: >
         {"node": "n0", "x.m": "genesis block created"}
-    - condition: >
-        {"node": "n0", "x.m": "genesis info saved"}
       action:
           name: start-nodes
           args:
