@@ -2,11 +2,11 @@
 
 contest is the simulation tool for mitum and it's children.
 
-[![CircleCI](https://img.shields.io/circleci/project/github/spikeekips/mitum/master.svg?style=flat-square&logo=circleci&label=circleci&cacheSeconds=60)](https://circleci.com/gh/spikeekips/mitum/tree/master)
-[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/spikeekips/mitum?tab=overview)
-[![Go Report Card](https://goreportcard.com/badge/github.com/spikeekips/mitum)](https://goreportcard.com/report/github.com/spikeekips/mitum)
-[![codecov](https://codecov.io/gh/spikeekips/mitum/branch/master/graph/badge.svg)](https://codecov.io/gh/spikeekips/mitum)
-[![](http://tokei.rs/b1/github/spikeekips/mitum?category=lines)](https://github.com/spikeekips/mitum)
+[![CircleCI](https://img.shields.io/circleci/project/github/spikeekips/contest/master.svg?style=flat-square&logo=circleci&label=circleci&cacheSeconds=60)](https://circleci.com/gh/spikeekips/contest/tree/master)
+[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/spikeekips/contest?tab=overview)
+[![Go Report Card](https://goreportcard.com/badge/github.com/spikeekips/contest)](https://goreportcard.com/report/github.com/spikeekips/contest)
+[![codecov](https://codecov.io/gh/spikeekips/contest/branch/master/graph/badge.svg)](https://codecov.io/gh/spikeekips/contest)
+[![](http://tokei.rs/b1/github/spikeekips/contest?category=lines)](https://github.com/spikeekips/contest)
 
 # Install
 
