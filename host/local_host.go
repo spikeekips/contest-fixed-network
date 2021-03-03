@@ -72,7 +72,9 @@ func (ho *LocalHost) BaseDir() string {
 }
 
 func (ho *LocalHost) Connect() error {
-	if c, err := dockerClient.NewEnvClient(); err != nil {
+	if c, err := dockerClient.NewClientWithOpts(
+		dockerClient.FromEnv,
+	); err != nil {
 		return err
 	} else {
 		ho.client = c
@@ -348,6 +350,7 @@ func (ho *LocalHost) createMongodb() error {
 			},
 			ExposedPorts: nat.PortSet{source: struct{}{}},
 		},
+		nil,
 		nil,
 		nil,
 		MongodbContainerName(),

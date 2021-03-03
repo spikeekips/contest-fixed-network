@@ -3,18 +3,18 @@ package cmds
 import (
 	"context"
 
-	"github.com/spikeekips/mitum/launch/config"
+	"github.com/spikeekips/mitum/util"
 	"golang.org/x/xerrors"
 )
 
 var (
-	ContextValueExitError config.ContextKey = "exit_error"
-	ContextValueExitChan  config.ContextKey = "exit_chan"
+	ContextValueExitError util.ContextKey = "exit_error"
+	ContextValueExitChan  util.ContextKey = "exit_chan"
 )
 
 func LoadExitErrorContextValue(ctx context.Context, l *error) error {
-	if err := config.LoadFromContextValue(ctx, ContextValueExitError, l); err != nil {
-		if xerrors.Is(err, config.ContextValueNotFoundError) {
+	if err := util.LoadFromContextValue(ctx, ContextValueExitError, l); err != nil {
+		if xerrors.Is(err, util.ContextValueNotFoundError) {
 			return nil
 		}
 
@@ -25,5 +25,5 @@ func LoadExitErrorContextValue(ctx context.Context, l *error) error {
 }
 
 func LoadExitChanContextValue(ctx context.Context, l *chan error) error {
-	return config.LoadFromContextValue(ctx, ContextValueExitChan, l)
+	return util.LoadFromContextValue(ctx, ContextValueExitChan, l)
 }

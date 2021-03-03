@@ -3,28 +3,28 @@ package host
 import (
 	"context"
 
-	"github.com/spikeekips/mitum/launch/config"
+	"github.com/spikeekips/mitum/util"
 )
 
 var (
-	ContextValueHosts      config.ContextKey = "hosts"
-	ContextValueMongodb    config.ContextKey = "mongodb"
-	ContextValueLogSaver   config.ContextKey = "log_saver"
-	ContextValueLogWatcher config.ContextKey = "log_watcher"
+	ContextValueHosts      util.ContextKey = "hosts"
+	ContextValueMongodb    util.ContextKey = "mongodb"
+	ContextValueLogSaver   util.ContextKey = "log_saver"
+	ContextValueLogWatcher util.ContextKey = "log_watcher"
 )
 
 func LoadHostsContextValue(ctx context.Context, l **Hosts) error {
-	return config.LoadFromContextValue(ctx, ContextValueHosts, l)
+	return util.LoadFromContextValue(ctx, ContextValueHosts, l)
 }
 
 func LoadMongodbContextValue(ctx context.Context, l **Mongodb) error {
-	return config.LoadFromContextValue(ctx, ContextValueMongodb, l)
+	return util.LoadFromContextValue(ctx, ContextValueMongodb, l)
 }
 
 func LoadLogSaverContextValue(ctx context.Context, l **LogSaver) error {
-	return config.LoadFromContextValue(ctx, ContextValueLogSaver, l)
+	return util.LoadFromContextValue(ctx, ContextValueLogSaver, l)
 }
 
 func LoadLogWatcherContextValue(ctx context.Context, l **LogWatcher) error {
-	return config.LoadFromContextValue(ctx, ContextValueLogWatcher, l)
+	return util.LoadFromContextValue(ctx, ContextValueLogWatcher, l)
 }

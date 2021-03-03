@@ -2,7 +2,8 @@
 # - 3 nodes with threshold, 100; means all nodes should be agree for new block
 # - all nodes is synced
 # - but `n2` ocurrs error when prepares height=3 and round=0
-# - all nodes moves to next round
+# - n2 still broadcast accept ballot with wrong new block
+# - next accept voteproof will be draw
 
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
@@ -105,8 +106,16 @@ sequences:
         {"node": "n2", "x.m": {"$regex": "prepare-occurring-error"}, "x.point.type": "error", "x.point.height": 3, "x.point.round": 0}
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 3, "x.block.round": {"$gt": 0}}
+        {"node": "n0", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 3, "x.block.round": {"$gt": 0}}
+        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
     - condition: >
-        {"node": "n2", "x.m": "new block stored", "x.block.height": 3, "x.block.round": {"$gt": 0}}
+        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
+
+    - condition: >
+        {"node": "n0", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
+    - condition: >
+        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
+    - condition: >
+        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
+

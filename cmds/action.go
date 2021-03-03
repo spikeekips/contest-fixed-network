@@ -158,6 +158,7 @@ func (ac *BaseNodesAction) createContainer(
 		ac.mainConfig(node, commands, t),
 		hostConfig,
 		nil,
+		nil,
 		name,
 	); err != nil {
 		return "", xerrors.Errorf("failed to create container: %w", err)
@@ -472,8 +473,7 @@ func (ac InitNodesAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ac.Map())
 }
 
-type StopAction struct {
-}
+type StopAction struct{}
 
 func (ac StopAction) Name() string {
 	return "stop"

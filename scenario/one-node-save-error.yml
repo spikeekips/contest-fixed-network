@@ -117,7 +117,7 @@ sequences:
         {"node": "n1", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.occurred_error._id }}" }, "node": "n2", "x.states.from": "CONSENSUS", "x.states.to":"SYNCING"}
+        {"_id": {"$gt": "{{ .Register.occurred_error._id }}" }, "node": "n2", "x.state_context.from": "CONSENSUS", "x.state_context.to": "SYNCING"}
       register:
           type: last_match
           to: moved_consensus_to_syncing
@@ -131,13 +131,13 @@ sequences:
         {"_id": {"$gt": "{{ .Register.moved_consensus_to_syncing._id }}" }, "node": "n2", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.syncing_finished._id }}" }, "node": "n2", "x.states.from": "SYNCING", "x.states.to":"JOINING"}
+        {"_id": {"$gt": "{{ .Register.syncing_finished._id }}" }, "node": "n2", "x.state_context.from": "SYNCING", "x.state_context.to": "JOINING"}
       register:
           type: last_match
           to: moved_syncing_to_joining
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.moved_syncing_to_joining._id }}" }, "node": "n2", "x.states.from": "JOINING", "x.states.to":"CONSENSUS"}
+        {"_id": {"$gt": "{{ .Register.moved_syncing_to_joining._id }}" }, "node": "n2", "x.state_context.from": "JOINING", "x.state_context.to": "CONSENSUS"}
       register:
           type: last_match
           to: n2_back_to_consensus

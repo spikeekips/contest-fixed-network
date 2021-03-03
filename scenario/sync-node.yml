@@ -111,13 +111,13 @@ sequences:
               - n2
 
     - condition: >
-        {"node": "n2", "x.states.from": "BOOTING", "x.states.to": "SYNCING"}
+        {"node": "n2", "x.state_context.from": "BOOTING", "x.state_context.to": "SYNCING"}
       register:
           type: last_match
           to: n2_to_syncing
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_to_syncing._id }}" }, "node": "n2", "x.states.from": "SYNCING", "x.states.to": "CONSENSUS"}
+        {"_id": {"$gt": "{{ .Register.n2_to_syncing._id }}" }, "node": "n2", "x.state_context.from": "SYNCING", "x.state_context.to": "CONSENSUS"}
       register:
           type: last_match
           to: n2_back_to_consensus
