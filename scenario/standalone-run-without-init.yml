@@ -30,8 +30,8 @@ node-config:
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             uri: {{ .Self.StorageURI }}
-            blockfs:
-                path: /tmp/blockfs
+            blockdata:
+                path: /tmp/blockdata
         network-id: {{ .NetworkID }}
         network:
             bind: quic://0.0.0.0:54321

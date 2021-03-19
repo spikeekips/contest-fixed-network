@@ -17,11 +17,10 @@ var (
 )
 
 var TranslateWords = map[string]string{
-	"ssh":     "SSH",
-	"id":      "ID",
-	"blockfs": "BlockFS",
-	"url":     "URL",
-	"uri":     "URI",
+	"ssh": "SSH",
+	"id":  "ID",
+	"url": "URL",
+	"uri": "URI",
 }
 
 type Vars struct {

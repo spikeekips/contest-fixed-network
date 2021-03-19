@@ -19,12 +19,12 @@ func HookCleanContainers(ctx context.Context) (context.Context, error) {
 
 	var hosts *host.Hosts
 	if err := host.LoadHostsContextValue(ctx, &hosts); err != nil {
-		return ctx, nil
+		return ctx, err
 	}
 
 	var flags map[string]interface{}
 	if err := config.LoadFlagsContextValue(ctx, &flags); err != nil {
-		return ctx, nil
+		return ctx, err
 	}
 
 	if !flags["CleanAfter"].(bool) {

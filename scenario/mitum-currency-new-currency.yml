@@ -43,8 +43,8 @@ node-config:
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             uri: {{ .Self.StorageURI }}
-            blockfs:
-                path: /data/blockfs
+            blockdata:
+                path: /data/blockdata
                 wide-open: true
         network-id: {{ .NetworkID }}
         network:

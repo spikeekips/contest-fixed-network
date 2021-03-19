@@ -172,7 +172,7 @@ func HookCloseHosts(ctx context.Context) (context.Context, error) {
 
 	var hosts *host.Hosts
 	if err := host.LoadHostsContextValue(ctx, &hosts); err != nil {
-		return ctx, nil
+		return ctx, err
 	}
 
 	log.Debug().Msg("trying to close hosts")

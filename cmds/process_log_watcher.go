@@ -84,16 +84,16 @@ func HookStopLogHandlers(ctx context.Context) (context.Context, error) {
 
 	var ls *host.LogSaver
 	if err := host.LoadLogSaverContextValue(ctx, &ls); err != nil {
-		return ctx, nil
+		return ctx, err
 	} else if err := ls.Stop(); err != nil {
 		log.Error().Err(err).Msg("failed to stop log saver")
 
-		return ctx, nil
+		return ctx, err
 	}
 
 	var lw *host.LogWatcher
 	if err := host.LoadLogWatcherContextValue(ctx, &lw); err != nil {
-		return ctx, nil
+		return ctx, err
 	} else if err := lw.Stop(); err != nil {
 		log.Error().Err(err).Msg("failed to stop log watcher")
 

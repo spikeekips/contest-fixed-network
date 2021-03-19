@@ -70,7 +70,7 @@ func HookCloseMongodb(ctx context.Context) (context.Context, error) {
 
 	var mg *host.Mongodb
 	if err := host.LoadMongodbContextValue(ctx, &mg); err != nil {
-		return ctx, nil
+		return ctx, err
 	}
 
 	log.Debug().Msg("trying to close mongodb")
