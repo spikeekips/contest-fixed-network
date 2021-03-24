@@ -40,6 +40,7 @@ node-config:
 
         policy:
             threshold: 100
+            network-connection-tls-insecure: true
 
         genesis-operations:
             - type: genesis-currencies

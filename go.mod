@@ -1,6 +1,6 @@
 module github.com/spikeekips/contest
 
-go 1.15
+go 1.16
 
 require (
 	github.com/Microsoft/go-winio v0.4.16 // indirect
@@ -19,7 +19,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/rs/zerolog v1.20.0
 	github.com/sirupsen/logrus v1.8.0 // indirect
-	github.com/spikeekips/mitum v0.0.0-20210303131314-a408e60f959f
+	github.com/spikeekips/mitum v0.0.0-20210324133629-3f3258fe99b9
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.4.6
 	go.uber.org/automaxprocs v1.4.0

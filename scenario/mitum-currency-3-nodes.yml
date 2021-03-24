@@ -51,6 +51,7 @@ node-config:
 
         policy:
             threshold: 100
+            network-connection-tls-insecure: true
 
         genesis-operations:
             - type: genesis-currencies
@@ -135,8 +136,11 @@ sequences:
                     --network-id "{{ .NetworkID }}" \
                     {{ .CID }} \
                     40 | {{ .Runtime.Flags.RunnerFile }} seal send \
+                        --node "{{ .Design.Node.n0.Network.URL }}" \
+                        --node "{{ .Design.Node.n1.Network.URL }}" \
                         --node "{{ .Design.Node.n2.Network.URL }}" \
                         --network-id "{{ .NetworkID }}" \
+                        --tls-insecure \
                         --seal - \
                         "{{ .Account.Genesis.Privatekey }}"
 
@@ -178,8 +182,11 @@ sequences:
                     --network-id "{{ .NetworkID }}" \
                     {{ .CID }} \
                     40 | {{ .Runtime.Flags.RunnerFile }} seal send \
+                        --node "{{ .Design.Node.n0.Network.URL }}" \
+                        --node "{{ .Design.Node.n1.Network.URL }}" \
                         --node "{{ .Design.Node.n2.Network.URL }}" \
                         --network-id "{{ .NetworkID }}" \
+                        --tls-insecure \
                         --seal - \
                         "{{ .Account.Genesis.Privatekey }}"
 
@@ -220,8 +227,11 @@ sequences:
                     "{{ .Account.a1.AddressKey }}-a000:0.0.1" \
                     {{ .CID }} \
                     10 | {{ .Runtime.Flags.RunnerFile }} seal send \
+                        --node "{{ .Design.Node.n0.Network.URL }}" \
+                        --node "{{ .Design.Node.n1.Network.URL }}" \
                         --node "{{ .Design.Node.n2.Network.URL }}" \
                         --network-id "{{ .NetworkID }}" \
+                        --tls-insecure \
                         --seal - \
                         "{{ .Account.a0.Privatekey }}"
 
@@ -254,8 +264,11 @@ sequences:
                     "{{ .Account.a0.Privatekey }}" \
                     "{{ .Account.a0.AddressKey }}-a000:0.0.1" \
                     {{ .CID }}  | {{ .Runtime.Flags.RunnerFile }} seal send \
+                        --node "{{ .Design.Node.n0.Network.URL }}" \
+                        --node "{{ .Design.Node.n1.Network.URL }}" \
                         --node "{{ .Design.Node.n2.Network.URL }}" \
                         --network-id "{{ .NetworkID }}" \
+                        --tls-insecure \
                         --seal - \
                         "{{ .Account.a0.Privatekey }}"
 
