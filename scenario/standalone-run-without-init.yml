@@ -29,7 +29,8 @@ node-config:
         privatekey: {{ NewKey "Self.Privatekey" "btc" }}
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
-            uri: {{ .Self.StorageURI }}
+            database:
+                uri: {{ .Self.StorageURI }}
             blockdata:
                 path: /tmp/blockdata
         network-id: {{ .NetworkID }}
