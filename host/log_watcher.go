@@ -15,7 +15,7 @@ type LogWatcher struct {
 	sync.RWMutex
 	storagePoolLock sync.RWMutex
 	*logging.Logging
-	*util.FunctionDaemon
+	*util.ContextDaemon
 	mg          *Mongodb
 	sqs         []*Sequence
 	exitChan    chan error
@@ -40,31 +40,23 @@ func NewLogWatcher(mg *Mongodb, sqs []*Sequence, exitChan chan error, vars *conf
 		storagePool: map[string]*Mongodb{},
 	}
 
-	lw.FunctionDaemon = util.NewFunctionDaemon(lw.start, false)
+	lw.ContextDaemon = util.NewContextDaemon("log-watcher", lw.start)
 
 	return lw, nil
 }
 
-func (lw *LogWatcher) start(stopchan chan struct{}) error {
+func (lw *LogWatcher) start(ctx context.Context) error {
 	ticker := time.NewTicker(10 * time.Millisecond)
-
-	stop := func(err error) {
-		ticker.Stop()
-
-		lw.exitChan <- err
-	}
+	defer ticker.Stop()
 
 	current, _ := lw.Current()
 	lw.Log().Debug().Str("condition", current.Condition().QueryString()).Msg("starts with sequence")
 
 	var stopError error
-	var stopped bool
 end:
 	for {
 		select {
-		case <-stopchan:
-			stopped = true
-
+		case <-ctx.Done():
 			break end
 		case <-ticker.C:
 			if sq, found := lw.Current(); !found {
@@ -81,11 +73,9 @@ end:
 		}
 	}
 
-	stop(stopError)
-
-	if !stopped {
-		<-stopchan
-	}
+	go func() {
+		lw.exitChan <- stopError
+	}()
 
 	return nil
 }
@@ -102,7 +92,11 @@ func (lw *LogWatcher) Stop() error {
 		cancel()
 	}
 
-	return lw.FunctionDaemon.Stop()
+	if !lw.ContextDaemon.IsStarted() {
+		return nil
+	}
+
+	return lw.ContextDaemon.Stop()
 }
 
 func (lw *LogWatcher) Current() (*Sequence, bool) {

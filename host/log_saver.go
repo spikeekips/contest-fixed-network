@@ -17,7 +17,7 @@ var ContestLogName = "contest"
 
 type LogSaver struct {
 	*logging.Logging
-	*util.FunctionDaemon
+	*util.ContextDaemon
 	mg          *Mongodb
 	exitChan    chan error
 	exitOnError bool
@@ -68,13 +68,13 @@ func NewLogSaver(
 	}
 
 	ls.logFiles = logFiles
-	ls.FunctionDaemon = util.NewFunctionDaemon(ls.start, false)
+	ls.ContextDaemon = util.NewContextDaemon("log-saver", ls.start)
 
 	return ls, nil
 }
 
 func (ls *LogSaver) Stop() error {
-	if err := ls.FunctionDaemon.Stop(); err != nil {
+	if err := ls.ContextDaemon.Stop(); err != nil {
 		return err
 	}
 
@@ -93,7 +93,7 @@ func (ls *LogSaver) LogEntryChan() chan<- LogEntry {
 	return ls.entryChan
 }
 
-func (ls *LogSaver) start(stopChan chan struct{}) error {
+func (ls *LogSaver) start(ctx context.Context) error {
 	defer ls.cancel()
 
 	ticker := time.NewTicker(50 * time.Millisecond)
@@ -105,7 +105,7 @@ func (ls *LogSaver) start(stopChan chan struct{}) error {
 end:
 	for {
 		select {
-		case <-stopChan:
+		case <-ctx.Done():
 			ls.cancel()
 
 			break end
