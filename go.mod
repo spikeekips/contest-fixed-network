@@ -19,7 +19,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/rs/zerolog v1.20.0
 	github.com/sirupsen/logrus v1.8.0 // indirect
-	github.com/spikeekips/mitum v0.0.0-20210327044952-044a7a20dd22
+	github.com/spikeekips/mitum v0.0.0-20210427195606-ca4eaf148a59
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.4.6
 	go.uber.org/automaxprocs v1.4.0

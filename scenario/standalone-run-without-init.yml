@@ -57,6 +57,10 @@ node-config:
                       type: fixed
                       amount: 1
 
+        suffrage:
+            nodes:
+                - n0-010a:0.0.1
+
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}

@@ -60,23 +60,22 @@ node-config:
                       type: fixed
                       amount: 1
 
+        suffrage:
+            type: fixed-suffrage
+            proposer: n0-010a:0.0.1
+            nodes:
+                - n0-010a:0.0.1
+                - n1-010a:0.0.1
+                - n2-010a:0.0.1
+
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
             url: {{ .Self.NetworkURL }}
 
-    n0: |
-        suffrage:
-            type: fixed-suffrage
-            proposer: n0-010a:0.0.1
-    n1: |
-        suffrage:
-            type: fixed-suffrage
-            proposer: n0-010a:0.0.1
-    n2: |
-        suffrage:
-            type: fixed-suffrage
-            proposer: n0-010a:0.0.1
+    n0:
+    n1:
+    n2:
 
 nodes-config: |
     nodes:{{ range $node, $config := .NodesConfig }}

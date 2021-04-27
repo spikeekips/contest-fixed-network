@@ -51,7 +51,7 @@ func (cmd *RunCommand) Run(version util.Version) error {
 		cmd.Log().Debug().Msgf(f, s...)
 	}))
 
-	if i, err := mitumcmds.SetupLoggingFromFlags(cmd.LogFlags); err != nil {
+	if i, err := mitumcmds.SetupLoggingFromFlags(cmd.LogFlags, os.Stdout); err != nil {
 		return err
 	} else {
 		_ = cmd.SetLogger(i)
