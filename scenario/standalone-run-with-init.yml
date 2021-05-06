@@ -19,7 +19,7 @@ storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
         {{ SetVar "Self.Address" ( printf "%s-010a:0.0.1" .Self.Alias ) }}
-        {{ SetVar "Self.NetworkURL" ( printf "quic://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "quic://%s:%s?insecure=true" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
 
         address: {{ .Self.Address }}
@@ -38,7 +38,6 @@ node-config:
 
         policy:
             threshold: 67
-            network-connection-tls-insecure: true
 
         genesis-operations:
             - type: genesis-currencies
