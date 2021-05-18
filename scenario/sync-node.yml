@@ -40,6 +40,9 @@ node-config:
         network:
             bind: quic://0.0.0.0:54321
             url: {{ .Self.NetworkURL }}
+            rate-limit:
+                0.0.0.0/0:
+                    preset: suffrage
 
         policy:
             threshold: 60
