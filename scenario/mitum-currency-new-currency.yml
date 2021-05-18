@@ -9,16 +9,16 @@
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok-0112:0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG-0113:0.0.1" }}
-    {{ SetVar "Account.Genesis.AddressKey" "8PdeEpvqfyL3uZFHRZG5PS3JngYUzFFUGPvCg29C2dBn" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok:btc-priv-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG:btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.AddressKey" "GbymDFuVmJwP4bjjyYu4L6xgBfUmdceufrMDdn4x1oz" }}
 
-    {{ SetVar "Account.a0.Privatekey" "Ky9hsGeKX4PYNNQEXHE9wQfJErfr1PMgxRQsjmEJ1s5k6YDigWT2-0112:0.0.1" }}
-    {{ SetVar "Account.a0.Publickey" "d9yr7HGb8XQoUvj3qqNwgdvKLCkrGPNNZ7AFZAYMZv5a-0113:0.0.1" }}
-    {{ SetVar "Account.a0.AddressKey" "3BA9YEDRvn5LKwj5VDCJrBbCYLsCgTokaTTqUN9AXn3s" }}
+    {{ SetVar "Account.a0.Privatekey" "Ky9hsGeKX4PYNNQEXHE9wQfJErfr1PMgxRQsjmEJ1s5k6YDigWT2:btc-priv-v0.0.1" }}
+    {{ SetVar "Account.a0.Publickey" "d9yr7HGb8XQoUvj3qqNwgdvKLCkrGPNNZ7AFZAYMZv5a:btc-pub-v0.0.1" }}
+    {{ SetVar "Account.a0.AddressKey" "DgDSpKHW7VDdnVkgP3CDKpcTsTTskJdvYYGEqp8KE2UF" }}
 
-    {{ SetVar "Account.a0.NewPrivatekey" "Kxp7sPwbRjR9dBWc6jNpg9TFRPCdSpLAJynWTCqnCm2JsDpFpfn2-0112:0.0.1" }}
-    {{ SetVar "Account.a0.NewPublickey" "nhCzDCPg6CK6cusWJVFFnRTed4ddx2F9bbkPJGn2d7PJ-0113:0.0.1" }}
+    {{ SetVar "Account.a0.NewPrivatekey" "Kxp7sPwbRjR9dBWc6jNpg9TFRPCdSpLAJynWTCqnCm2JsDpFpfn2:btc-priv-v0.0.1" }}
+    {{ SetVar "Account.a0.NewPublickey" "nhCzDCPg6CK6cusWJVFFnRTed4ddx2F9bbkPJGn2d7PJ:btc-pub-v0.0.1" }}
 
     {{ SetVar "OLD_CID" "MCC" }}
     {{ SetVar "CID" "XXX" }}
@@ -34,7 +34,7 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s-010a:0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%s:sa-v0.0.1" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "quic://%s:%s?insecure=true" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
 
@@ -69,9 +69,9 @@ node-config:
 
         suffrage:
             nodes:
-                - n0-010a:0.0.1
-                - n1-010a:0.0.1
-                - n2-010a:0.0.1
+                - n0:sa-v0.0.1
+                - n1:sa-v0.0.1
+                - n2:sa-v0.0.1
 
         _nodes-config:
             address: {{ .Self.Address }}
@@ -102,13 +102,13 @@ sequences:
     # check genesis account is created in storage
     - condition:
         query: >
-            {"key": "{{ .Account.Genesis.AddressKey }}-a000:account", "height": 0, "d.value.value.keys.keys.key": "{{ .Account.Genesis.Publickey }}", "d.value.value.keys.keys.weight": 100, "d.value.value.keys.threshold": 100}
+            {"key": "{{ .Account.Genesis.AddressKey }}-mca:account", "height": 0, "d.value.value.keys.keys.key": "{{ .Account.Genesis.Publickey }}", "d.value.value.keys.keys.weight": 100, "d.value.value.keys.threshold": 100}
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
     - condition:
         query: >
-            {"key": "{{ .Account.Genesis.AddressKey }}-a000-{{ .OLD_CID }}:balance", "height": 0, "d.value.value.amount": "100"}
+            {"key": "{{ .Account.Genesis.AddressKey }}-mca-{{ .OLD_CID }}:balance", "height": 0, "d.value.value.amount": "100"}
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
@@ -139,13 +139,13 @@ sequences:
                   {{ .Runtime.Flags.RunnerFile }} seal currency-register \
                     --network-id "{{ .NetworkID }}" \
                     --feeer "fixed" \
-                    --feeer-fixed-receiver "{{ .Account.Genesis.AddressKey }}-a000:0.0.1" \
+                    --feeer-fixed-receiver "{{ .Account.Genesis.AddressKey }}:mca-v0.0.1" \
                     --feeer-fixed-amount {{ .CID_FeeerAmount }} \
                     --policy-new-account-min-balance {{ .CID_MinBalance }} \
                     "{{ .Design.Node.n0.Privatekey }}" \
                     {{ .CID }} \
                     {{ .CID_Amount }} \
-                    "{{ .Account.Genesis.AddressKey }}-a000:0.0.1" \
+                    "{{ .Account.Genesis.AddressKey }}:mca-v0.0.1" \
                         | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
                             "{{ .Design.Node.n1.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
                         | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
@@ -160,7 +160,7 @@ sequences:
                             "{{ .Account.Genesis.Privatekey }}"
 
     - condition: >
-        {"node": "n2", "x.m": "currency updated from mitum database", "x.currency.height": {"$gte": 3}, "x.currency.value.value.amount.currency": "{{ .CID }}", "x.currency.value.value.amount.amount": "{{ .CID_Amount }}", "x.currency.value.value.genesis_account": "{{ .Account.Genesis.AddressKey }}-a000:0.0.1", "x.currency.value.value.policy.new_account_min_balance": "{{ .CID_MinBalance }}", "x.currency.value.value.policy.feeer.type": "fixed", "x.currency.value.value.policy.feeer.amount": "{{ .CID_FeeerAmount }}", "x.currency.value.value.policy.feeer.receiver": "{{ .Account.Genesis.AddressKey }}-a000:0.0.1"}
+        {"node": "n2", "x.m": "currency updated from mitum database", "x.currency.height": {"$gte": 3}, "x.currency.value.value.amount.currency": "{{ .CID }}", "x.currency.value.value.amount.amount": "{{ .CID_Amount }}", "x.currency.value.value.genesis_account": "{{ .Account.Genesis.AddressKey }}:mca-v0.0.1", "x.currency.value.value.policy.new_account_min_balance": "{{ .CID_MinBalance }}", "x.currency.value.value.policy.feeer.type": "fixed", "x.currency.value.value.policy.feeer.amount": "{{ .CID_FeeerAmount }}", "x.currency.value.value.policy.feeer.receiver": "{{ .Account.Genesis.AddressKey }}:mca-v0.0.1"}
 
       # create new account, a0
       action:
@@ -169,7 +169,7 @@ sequences:
               - |
                   {{ .Runtime.Flags.RunnerFile }} seal create-account \
                     "{{ .Account.Genesis.Privatekey }}" \
-                    "{{ .Account.Genesis.AddressKey }}-a000:0.0.1" \
+                    "{{ .Account.Genesis.AddressKey }}:mca-v0.0.1" \
                     --key "{{ .Account.a0.Publickey }},100" \
                     --threshold 100 \
                     --network-id "{{ .NetworkID }}" \
@@ -186,7 +186,7 @@ sequences:
     # check genesis account is changed
     - condition:
         query: >
-            {"key": "{{ .Account.Genesis.AddressKey }}-a000-{{ .CID }}:balance", "height": {"$gt": 3}, "d.value.value.amount": "60"}
+            {"key": "{{ .Account.Genesis.AddressKey }}-mca-{{ .CID }}:balance", "height": {"$gt": 3}, "d.value.value.amount": "60"}
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
@@ -197,14 +197,14 @@ sequences:
     # check a0 is created
     - condition:
         query: >
-            {"key": "{{ .Account.a0.AddressKey }}-a000:account", "height": {{ .Register.a0_created.height }}, "d.value.value.keys.keys.key": "{{ .Account.a0.Publickey }}", "d.value.value.keys.keys.weight": 100, "d.value.value.keys.threshold": 100}
+            {"key": "{{ .Account.a0.AddressKey }}-mca:account", "height": {{ .Register.a0_created.height }}, "d.value.value.keys.keys.key": "{{ .Account.a0.Publickey }}", "d.value.value.keys.keys.weight": 100, "d.value.value.keys.threshold": 100}
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
 
     - condition:
         query: >
-            {"key": "{{ .Account.a0.AddressKey }}-a000-{{ .CID }}:balance", "height": {{ .Register.a0_created.height }}, "d.value.value.amount": "40"}
+            {"key": "{{ .Account.a0.AddressKey }}-mca-{{ .CID }}:balance", "height": {{ .Register.a0_created.height }}, "d.value.value.amount": "40"}
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
@@ -217,8 +217,8 @@ sequences:
                   {{ .Runtime.Flags.RunnerFile }} seal transfer \
                     --network-id "{{ .NetworkID }}" \
                     "{{ .Account.a0.Privatekey }}" \
-                    "{{ .Account.a0.AddressKey }}-a000:0.0.1" \
-                    "{{ .Account.Genesis.AddressKey }}-a000:0.0.1" \
+                    "{{ .Account.a0.AddressKey }}:mca-v0.0.1" \
+                    "{{ .Account.Genesis.AddressKey }}:mca-v0.0.1" \
                     {{ .CID }} \
                     10 | {{ .Runtime.Flags.RunnerFile }} seal send \
                         --node "{{ .Design.Node.n0.Network.URL }}" \
@@ -231,7 +231,7 @@ sequences:
 
     - condition:
         query: >
-            {"key": "{{ .Account.a0.AddressKey }}-a000-{{ .CID }}:balance", "height": {"$gt": {{ .Register.a0_created.height }} }, "d.value.value.amount": "27"}
+            {"key": "{{ .Account.a0.AddressKey }}-mca-{{ .CID }}:balance", "height": {"$gt": {{ .Register.a0_created.height }} }, "d.value.value.amount": "27"}
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
@@ -241,7 +241,7 @@ sequences:
 
     - condition:
         query: >
-            {"key": "{{ .Account.Genesis.AddressKey }}-a000-{{ .CID }}:balance", "height": {{ .Register.transfered.height }}, "d.value.value.amount": "73"}
+            {"key": "{{ .Account.Genesis.AddressKey }}-mca-{{ .CID }}:balance", "height": {{ .Register.transfered.height }}, "d.value.value.amount": "73"}
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state

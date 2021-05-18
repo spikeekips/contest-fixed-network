@@ -7,8 +7,8 @@
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok-0112:0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG-0113:0.0.1" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok:btc-priv-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG:btc-pub-v0.0.1" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -20,7 +20,7 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s-010a:0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%s:sa-v0.0.1" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "quic://%s:%s?insecure=true" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.Privatekey" (NewKey (printf "key-%s" .Self.Alias) "btc") }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
@@ -59,9 +59,9 @@ node-config:
 
         suffrage:
             nodes:
-                - n0-010a:0.0.1
-                - n1-010a:0.0.1
-                - n2-010a:0.0.1
+                - n0:sa-v0.0.1
+                - n1:sa-v0.0.1
+                - n2:sa-v0.0.1
 
         _nodes-config:
             address: {{ .Self.Address }}
