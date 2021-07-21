@@ -21,7 +21,7 @@ storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
         {{ SetVar "Self.Address" ( printf "%s:sa-v0.0.1" .Self.Alias ) }}
-        {{ SetVar "Self.NetworkURL" ( printf "quic://%s:%s?insecure=true" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?insecure=true" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.Privatekey" (NewKey (printf "key-%s" .Self.Alias) "btc") }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
         {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
@@ -36,7 +36,7 @@ node-config:
                 path: /data/blockdata
         network-id: {{ .NetworkID }}
         network:
-            bind: quic://0.0.0.0:54321
+            bind: https://0.0.0.0:54321
             url: {{ .Self.NetworkURL }}
 
         policy:
