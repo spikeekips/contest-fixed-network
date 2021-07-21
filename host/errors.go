@@ -12,7 +12,7 @@ func NewNodeStderrError(node string, b []byte) NodeStderrError {
 }
 
 func (e NodeStderrError) Error() string {
-	var s string = string(e.Err)
+	s := string(e.Err)
 	if len(s) > 50 {
 		s = s[:50] + " ..."
 	}

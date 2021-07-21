@@ -114,7 +114,7 @@ func (de DesignYAML) mergeSequences() ([]DesignSequence, error) {
 	return ss, nil
 }
 
-func (de DesignYAML) mergeEtc(design Design) (Design, error) { // nolint(unparam)
+func (de DesignYAML) mergeEtc(design Design) (Design, error) { // nolint:unparam
 	if de.ExitOnError == nil {
 		design.ExitOnError = true
 	} else {
