@@ -52,17 +52,17 @@ func NewLogSaver(
 	nodes = append(nodes, ContestLogName)
 	for _, alias := range nodes {
 		var n [2]io.WriteCloser
-		if i, err := ls.createLogFile(logDir, fmt.Sprintf("%s.stdout", alias)); err != nil {
+		i, err := ls.createLogFile(logDir, fmt.Sprintf("%s.stdout", alias))
+		if err != nil {
 			return nil, err
-		} else {
-			n[0] = i
 		}
+		n[0] = i
 
-		if i, err := ls.createLogFile(logDir, fmt.Sprintf("%s.stderr", alias)); err != nil {
+		i, err = ls.createLogFile(logDir, fmt.Sprintf("%s.stderr", alias))
+		if err != nil {
 			return nil, err
-		} else {
-			n[1] = i
 		}
+		n[1] = i
 
 		logFiles[alias] = n
 	}
@@ -123,14 +123,14 @@ end:
 				continue
 			}
 
-			if name, err := ls.saveToFile(entry); err != nil {
+			name, err := ls.saveToFile(entry)
+			if err != nil {
 				ls.Log().Error().Err(err).Interface("entry", entry).Msg("failed to save log entry")
 
 				continue
-			} else {
-				updated[name] = struct{}{}
 			}
 
+			updated[name] = struct{}{}
 			entries = append(entries, entry)
 		}
 	}
@@ -158,20 +158,21 @@ func (ls *LogSaver) saveToFile(entry LogEntry) (string, error) {
 
 	if err := entry.Write(w); err != nil {
 		return "", xerrors.Errorf("failed to write log file, %q(IsError=%v): %w", name, entry.IsError(), err)
-	} else {
-		return name, nil
 	}
+
+	return name, nil
 }
 
-func (ls *LogSaver) createLogFile(logDir, name string) (io.WriteCloser, error) {
-	if i, err := os.OpenFile(
+func (*LogSaver) createLogFile(logDir, name string) (io.WriteCloser, error) {
+	i, err := os.OpenFile(
 		filepath.Clean(filepath.Join(logDir, fmt.Sprintf("%s.log", name))),
 		os.O_RDWR|os.O_CREATE, 0o600,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, xerrors.Errorf("failed to create log file, %q: %w", name, err)
-	} else {
-		return i, nil
 	}
+
+	return i, nil
 }
 
 func (ls *LogSaver) syncs(updated map[string]struct{}) error {

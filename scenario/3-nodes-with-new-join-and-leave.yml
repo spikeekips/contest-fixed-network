@@ -3,12 +3,20 @@
 # - threshold is 100
 # - `n0`: *init* before *run*
 # - all nodes, starts
-# - the nodes will work successfully
+# - new node, `n3` starts
+# - `n3` has same node with `n2`, but has different publish url
+# - `n2` suspended
+# - the nodes, except n2 will work successfully
+# - `n2` stop
+# - the alive nodes will work successfully
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
     {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok:btc-priv-v0.0.1" }}
     {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG:btc-pub-v0.0.1" }}
+
+    {{ NewKey "N2Privatekey" "btc" }}
+    {{ SetVar "N2Address" "n2:sa-v0.0.1" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -63,17 +71,27 @@ node-config:
                 - n2:sa-v0.0.1
 
         _nodes-config:
-            address: {{ .Self.Address }}
-            publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
+            address: {{ if eq .Self.Alias "n3" }}{{ .N2Address }}{{ else }}{{ .Self.Address }}{{ end }}
+            publickey: {{ if eq .Self.Alias "n3" }}{{ with .N2Privatekey }}{{ .Publickey }}{{ end }}{{ else }}{{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}{{ end }}
 
     n0:
     n1:
-    n2:
+    n2: |
+        address: {{ .N2Address }}
+        privatekey: {{ .N2Privatekey }}
+        publickey: {{ with .N2Privatekey }}{{ .Publickey }}{{ end }}
+    n3: |
+        address: {{ .N2Address }}
+        privatekey: {{ .N2Privatekey }}
+        publickey: {{ with .N2Privatekey }}{{ .Publickey }}{{ end }}
 
 nodes-config: |
-    nodes:{{ range $node, $config := .NodesConfig }}
+    nodes:{{ range $node, $config := .NodesConfig }}{{ if ne $node "n3" }}{{ if and ( eq $.Alias "n3" ) ( eq $node "n2" ) }}{{ else }}{{ if eq $node "n2" }}
+        - address: {{ $.N2Address }}
+          publickey: {{ with $.N2Privatekey }}{{ .Publickey }}{{ end }}
+          {{ else }}
         - address: {{ index $config "address" }}
-          publickey: {{ index $config "publickey" }}{{ end }}
+          publickey: {{ index $config "publickey" }}{{ end }}{{ end }}{{ end }}{{ end }}
 
 sequences:
     - condition: >
@@ -115,3 +133,46 @@ sequences:
         {"node": "n1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
     - condition: >
         {"node": "n2", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+      action:
+          name: start-nodes
+          nodes:
+              - n3
+          args:
+              - "--discovery"
+              - "{{ .Design.Node.n0.Network.URL }}"
+              - "--discovery"
+              - "{{ .Design.Node.n1.Network.URL }}"
+
+    - condition: >
+        {"node": "n0", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
+    - condition: >
+        {"node": "n1", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
+ 
+    # NOTE n2 is still joined, but the others, n0, n1 updated the network
+    # info of "n2:sa-v0.0.1" by n3. Naturally n0, n1 will not broadcast it's
+    # ballot, so n2 can not do anyting.
+    - condition: >
+        {"node": "n2", "x.m": "new block stored", "x.block.height": {"$lt": 10}, "x.block.round": 0}
+
+    - condition: >
+        {"node": "n3", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
+      action:
+          name: stop-nodes
+          nodes:
+              - n2
+ 
+    # NOTE after n2 left, n3 already is joined, so nodes did not change their
+    # network info. all the other nodes still works.
+    - condition: >
+        {"node": "n0", "x.notify": "leave", "x.node": "{{ .N2Address }}"}
+    - condition: >
+        {"node": "n1", "x.notify": "leave", "x.node": "{{ .N2Address }}"}
+    - condition: >
+        {"node": "n3", "x.notify": "leave", "x.node": "{{ .N2Address }}"}
+
+    - condition: >
+        {"node": "n0", "x.m": "new block stored", "x.block.height": 20, "x.block.round": 0}
+    - condition: >
+        {"node": "n1", "x.m": "new block stored", "x.block.height": 20, "x.block.round": 0}
+    - condition: >
+        {"node": "n3", "x.m": "new block stored", "x.block.height": 20, "x.block.round": 0}

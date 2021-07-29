@@ -59,15 +59,16 @@ func ProcessLogSaver(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	if lo, err := host.NewLogSaver(mg, logDir, nodes, exitChan, design.ExitOnError); err != nil {
+	lo, err := host.NewLogSaver(mg, logDir, nodes, exitChan, design.ExitOnError)
+	if err != nil {
 		return ctx, err
-	} else {
-		_ = lo.SetLogger(log)
-
-		if err := lo.Start(); err != nil {
-			return ctx, err
-		}
-
-		return context.WithValue(ctx, host.ContextValueLogSaver, lo), nil
 	}
+
+	_ = lo.SetLogger(log)
+
+	if err := lo.Start(); err != nil {
+		return ctx, err
+	}
+
+	return context.WithValue(ctx, host.ContextValueLogSaver, lo), nil
 }

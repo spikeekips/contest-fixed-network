@@ -31,21 +31,21 @@ func AvailablePort(network string, exclude []string) (string, error) {
 
 func availableTCPPortWithExcludes(excludes []string) (string, error) {
 	for {
-		if port, err := availableTCPPort(); err != nil {
+		port, err := availableTCPPort()
+		if err != nil {
 			return port, err
-		} else {
-			var found bool
-			for _, p := range excludes {
-				if port == p {
-					found = true
+		}
+		var found bool
+		for _, p := range excludes {
+			if port == p {
+				found = true
 
-					break
-				}
+				break
 			}
+		}
 
-			if !found {
-				return port, nil
-			}
+		if !found {
+			return port, nil
 		}
 	}
 }

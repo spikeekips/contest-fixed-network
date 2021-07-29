@@ -19,6 +19,49 @@ import (
 	"github.com/spikeekips/contest/host"
 )
 
+var (
+	runStartProcessors           []pm.Process
+	runStartHooks                []pm.Hook
+	runStartProcessorsConfigOnly []pm.Process
+	runStartHooksConfigOnly      []pm.Hook
+)
+
+func init() {
+	runStartProcessors = []pm.Process{
+		ProcessorConfig,
+		ProcessorMongodb,
+		ProcessorLogSaver,
+		ProcessorHosts,
+		ProcessorNodes,
+		ProcessorLogWatcher,
+	}
+
+	runStartHooks = []pm.Hook{
+		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, HookNameBase, HookBase),
+		pm.NewHook(pm.HookPrefixPost, ProcessNameConfig, HookNameVars, HookVars),
+		pm.NewHook(pm.HookPrefixPost, ProcessNameConfig, HookNameConfigStorage, HookConfigStorage),
+		pm.NewHook(pm.HookPrefixPost, ProcessNameHosts,
+			HookNameCleanStoppedNodeContainers, HookCleanStoppedNodeContainers),
+		pm.NewHook(pm.HookPrefixPost, ProcessNameNodes, HookNameContestReady, HookContestReady),
+	}
+
+	runStartProcessorsConfigOnly = []pm.Process{
+		ProcessorConfig,
+		ProcessorMongodb,
+		ProcessorLogSaver,
+		ProcessorHosts,
+		ProcessorNodes,
+	}
+
+	runStartHooksConfigOnly = []pm.Hook{
+		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, HookNameBase, HookBase),
+		pm.NewHook(pm.HookPrefixPost, ProcessNameConfig, HookNameVars, HookVars),
+		pm.NewHook(pm.HookPrefixPost, ProcessNameConfig, HookNameConfigStorage, HookConfigStorage),
+		pm.NewHook(pm.HookPrefixPost, ProcessNameHosts,
+			HookNameCleanStoppedNodeContainers, HookCleanStoppedNodeContainers),
+	}
+}
+
 type RunCommand struct {
 	*logging.Logging
 	*mitumcmds.LogFlags
@@ -28,6 +71,7 @@ type RunCommand struct {
 	Force          bool               `name:"force" help:"kill the still running node containers"`
 	CleanAfter     bool               `name:"clean-after" help:"clean node containers after exit"`
 	ExitAfter      time.Duration      `name:"exit-after" help:"exit contest"`
+	ConfigOnly     bool               `name:"config-only" help:"exit after config"`
 	version        util.Version
 	runProcesses   *pm.Processes
 	closeProcesses *pm.Processes
@@ -41,8 +85,6 @@ func NewRunCommand() (RunCommand, error) {
 		LogFlags: &mitumcmds.LogFlags{},
 	}
 
-	cmd.processes()
-
 	return cmd, nil
 }
 
@@ -51,11 +93,11 @@ func (cmd *RunCommand) Run(version util.Version) error {
 		cmd.Log().Debug().Msgf(f, s...)
 	}))
 
-	if i, err := mitumcmds.SetupLoggingFromFlags(cmd.LogFlags, os.Stdout); err != nil {
+	i, err := mitumcmds.SetupLoggingFromFlags(cmd.LogFlags, os.Stdout)
+	if err != nil {
 		return err
-	} else {
-		_ = cmd.SetLogger(i)
 	}
+	_ = cmd.SetLogger(i)
 
 	if err := version.IsValid(nil); err != nil {
 		return err
@@ -65,15 +107,18 @@ func (cmd *RunCommand) Run(version util.Version) error {
 
 	if err := version.IsValid(nil); err != nil {
 		return err
-	} else {
-		cmd.version = version
 	}
+	cmd.version = version
 
 	var exitError error
 	if err := cmd.run(); err != nil {
 		cmd.Log().Error().Err(err).Msg("failed to run contest")
 
 		exitError = err
+	}
+
+	if cmd.ConfigOnly {
+		return nil
 	}
 
 	if err := cmd.close(cmd.runProcesses.Context(), exitError); err != nil {
@@ -103,6 +148,9 @@ func (cmd *RunCommand) run() error {
 		if err != nil {
 			return err
 		}
+		if cmd.ConfigOnly {
+			return nil
+		}
 	case sig := <-sigChan:
 		return xerrors.Errorf("signal, %v interrupted", sig)
 	}
@@ -111,7 +159,7 @@ func (cmd *RunCommand) run() error {
 	case err := <-exitChan:
 		var ne host.NodeStderrError
 		if xerrors.As(err, &ne) {
-			fmt.Fprintln(os.Stderr, ne.String())
+			_, _ = fmt.Fprintln(os.Stderr, ne.String())
 		}
 
 		return err
@@ -142,6 +190,8 @@ func (cmd *RunCommand) close(ctx context.Context, exitError error) error {
 }
 
 func (cmd *RunCommand) processRun(ctx context.Context) error {
+	cmd.prepareProcesses()
+
 	ctx = context.WithValue(ctx, config.ContextValueLog, cmd.Log())
 	ctx = context.WithValue(ctx, config.ContextValueFlags, map[string]interface{}{
 		"Design":     []byte(cmd.Design),
@@ -159,7 +209,7 @@ func (cmd *RunCommand) processRun(ctx context.Context) error {
 	return cmd.runProcesses.Run()
 }
 
-func (cmd *RunCommand) connectSig() chan os.Signal {
+func (*RunCommand) connectSig() chan os.Signal {
 	sigc := make(chan os.Signal, 10)
 	signal.Notify(sigc,
 		syscall.SIGINT,
@@ -171,29 +221,26 @@ func (cmd *RunCommand) connectSig() chan os.Signal {
 	return sigc
 }
 
-func (cmd *RunCommand) processes() {
+func (cmd *RunCommand) prepareProcesses() {
 	startProcesses := pm.NewProcesses()
 
-	for _, p := range []pm.Process{
-		ProcessorConfig,
-		ProcessorMongodb,
-		ProcessorLogSaver,
-		ProcessorHosts,
-		ProcessorNodes,
-		ProcessorLogWatcher,
-	} {
+	var startProcessors []pm.Process
+	var startHooks []pm.Hook
+
+	if cmd.ConfigOnly {
+		startProcessors = runStartProcessorsConfigOnly
+		startHooks = runStartHooksConfigOnly
+	} else {
+		startProcessors = runStartProcessors
+		startHooks = runStartHooks
+	}
+
+	for _, p := range startProcessors {
 		if err := startProcesses.AddProcess(p, false); err != nil {
 			panic(err)
 		}
 	}
 
-	startHooks := []pm.Hook{
-		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, HookNameBase, HookBase),
-		pm.NewHook(pm.HookPrefixPost, ProcessNameConfig, HookNameVars, HookVars),
-		pm.NewHook(pm.HookPrefixPost, ProcessNameConfig, HookNameConfigStorage, HookConfigStorage),
-		pm.NewHook(pm.HookPrefixPost, ProcessNameHosts, HookNameCleanStoppedNodeContainers, HookCleanStoppedNodeContainers),
-		pm.NewHook(pm.HookPrefixPost, ProcessNameNodes, HookNameContestReady, HookContestReady),
-	}
 	for i := range startHooks {
 		hook := startHooks[i]
 		if err := startProcesses.AddHook(hook.Prefix, hook.Process, hook.Name, hook.F, true); err != nil {
@@ -207,17 +254,18 @@ func (cmd *RunCommand) processes() {
 		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, HookNameStopLogHandlers, HookStopLogHandlers),
 		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, HookNameCloseHosts, HookCloseHosts),
 		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, HookNameCloseMongodb, HookCloseMongodb),
-		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, "exit_with_error", func(ctx context.Context) (context.Context, error) {
-			var exitError error
-			switch err := LoadExitErrorContextValue(ctx, &exitError); {
-			case err != nil:
-				return ctx, err
-			case exitError != nil:
-				return ctx, exitError
-			default:
-				return ctx, nil
-			}
-		}),
+		pm.NewHook(pm.HookPrefixPost, pm.INITProcess,
+			"exit_with_error", func(ctx context.Context) (context.Context, error) {
+				var exitError error
+				switch err := LoadExitErrorContextValue(ctx, &exitError); {
+				case err != nil:
+					return ctx, err
+				case exitError != nil:
+					return ctx, exitError
+				default:
+					return ctx, nil
+				}
+			}),
 		pm.NewHook(pm.HookPrefixPost, pm.INITProcess, HookNameCleanContainers, HookCleanContainers),
 	}
 	for i := range closeHooks {

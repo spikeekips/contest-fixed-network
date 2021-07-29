@@ -55,21 +55,16 @@ func ProcessNodes(ctx context.Context) (context.Context, error) {
 	}
 
 	log.Debug().Msg("trying to prepare hosts")
-	var nodesConfig map[string][]byte
-	if b, err := generateNodesConfig(ctx, design, hosts); err != nil {
+	nodesConfig, err := generateNodesConfig(ctx, design, hosts)
+	if err != nil {
 		return ctx, xerrors.Errorf("failed to generate nodes config: %w", err)
-	} else {
-		nodesConfig = b
 	}
 
 	if err := hosts.TraverseNodes(func(node *host.Node) (bool, error) {
 		vars.Set(fmt.Sprintf("Design.Node.%s", node.Alias()), node.ConfigMap())
 
-		if err := saveNodeConfig(node.Alias(), logDir, node.ConfigData(), nodesConfig[node.Alias()]); err != nil {
-			return false, err
-		} else {
-			return true, nil
-		}
+		err := saveNodeConfig(node.Alias(), logDir, node.ConfigData(), nodesConfig[node.Alias()])
+		return err == nil, err
 	}); err != nil {
 		return ctx, err
 	}

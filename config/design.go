@@ -68,19 +68,19 @@ func (de *Design) IsValid([]byte) error {
 }
 
 func (de *Design) SetDatabase(s string) error {
-	if i, err := url.Parse(de.Storage.String()); err != nil {
+	i, err := url.Parse(de.Storage.String())
+	if err != nil {
 		return err
-	} else {
-		i.Path = s
-
-		if cs, err := CheckMongodbURI(i.String()); err != nil {
-			return err
-		} else {
-			de.Storage = cs
-
-			return nil
-		}
 	}
+	i.Path = s
+
+	cs, err := CheckMongodbURI(i.String())
+	if err != nil {
+		return err
+	}
+	de.Storage = cs
+
+	return nil
 }
 
 type DesignHost struct {

@@ -37,11 +37,12 @@ func NewMongodb(cs connstring.ConnString) *Mongodb {
 }
 
 func NewMongodbFromString(uri string) (*Mongodb, error) {
-	if cs, err := config.CheckMongodbURI(uri); err != nil {
+	i, err := config.CheckMongodbURI(uri)
+	if err != nil {
 		return nil, err
-	} else {
-		return &Mongodb{cs: cs}, nil
 	}
+
+	return &Mongodb{cs: i}, nil
 }
 
 func (mg *Mongodb) Connect(ctx context.Context) error {
@@ -50,21 +51,19 @@ func (mg *Mongodb) Connect(ctx context.Context) error {
 		return err
 	}
 
-	var client *mongo.Client
-	if c, err := mongo.Connect(ctx, clientOpts); err != nil {
+	client, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
 		return err
-	} else {
-		client = c
 	}
 
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		return err
-	} else {
-		mg.client = client
-		mg.db = client.Database(mg.cs.Database)
-
-		return nil
 	}
+
+	mg.client = client
+	mg.db = client.Database(mg.cs.Database)
+
+	return nil
 }
 
 func (mg *Mongodb) Close(ctx context.Context) error {
@@ -88,9 +87,9 @@ func (mg *Mongodb) AddLogEntries(ctx context.Context, entries []LogEntry) error 
 	opts := options.BulkWrite().SetOrdered(true)
 	if _, err := mg.db.Collection(colLogEntry).BulkWrite(ctx, models, opts); err != nil {
 		return err
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 func (mg *Mongodb) Find(ctx context.Context, col string, query bson.M) (map[string]interface{}, bool, error) {
@@ -119,19 +118,19 @@ func (mg *Mongodb) createIndices(col string, models []mongo.IndexModel, prefix s
 		return err
 	}
 
-	var existings []string
 	var results []bson.M
 	if err = cursor.All(context.TODO(), &results); err != nil {
 		return err
-	} else {
-		for _, r := range results {
-			name := r["name"].(string)
-			if !strings.HasPrefix(name, prefix) {
-				continue
-			}
+	}
 
-			existings = append(existings, name)
+	var existings []string // nolint:prealloc
+	for _, r := range results {
+		name := r["name"].(string)
+		if !strings.HasPrefix(name, prefix) {
+			continue
 		}
+
+		existings = append(existings, name)
 	}
 
 	if len(existings) > 0 {
@@ -148,9 +147,9 @@ func (mg *Mongodb) createIndices(col string, models []mongo.IndexModel, prefix s
 
 	if _, err := iv.CreateMany(context.TODO(), models); err != nil {
 		return err
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 type LogEntryBSON struct {
@@ -162,11 +161,12 @@ func NewLogEntryBSON(l LogEntry) LogEntryBSON {
 }
 
 func (lo LogEntryBSON) MarshalBSON() ([]byte, error) {
-	if m, err := lo.l.Map(); err != nil {
+	m, err := lo.l.Map()
+	if err != nil {
 		return nil, err
-	} else {
-		m["_id"] = config.ULID().String()
-
-		return bson.Marshal(m)
 	}
+
+	m["_id"] = config.ULID().String()
+
+	return bson.Marshal(m)
 }

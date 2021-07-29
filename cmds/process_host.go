@@ -142,21 +142,17 @@ func HookCleanStoppedNodeContainers(ctx context.Context) (context.Context, error
 	log.Debug().Bool("force", force).Msg("trying to clean up stopped node containers")
 
 	if err := hosts.TraverseHosts(func(h host.Host) (bool, error) {
-		if err := h.Clean(context.Background(), true, force); err != nil {
-			return false, err
-		} else {
-			return true, nil
-		}
+		err := h.Clean(context.Background(), true, force)
+
+		return err == nil, err
 	}); err != nil {
 		return ctx, err
 	}
 
 	if err := hosts.TraverseHosts(func(h host.Host) (bool, error) {
-		if err := h.Clean(context.Background(), false, force); err != nil {
-			return false, err
-		} else {
-			return true, nil
-		}
+		err := h.Clean(context.Background(), false, force)
+
+		return err == nil, err
 	}); err != nil {
 		return ctx, err
 	}

@@ -59,9 +59,12 @@ end:
 		case <-ctx.Done():
 			break end
 		case <-ticker.C:
-			if sq, found := lw.Current(); !found {
+			sq, found := lw.Current()
+			if !found {
 				continue
-			} else if finished, err := lw.evaluate(sq); err != nil {
+			}
+
+			if finished, err := lw.evaluate(sq); err != nil {
 				stopError = err
 
 				break end
@@ -152,11 +155,12 @@ func (lw *LogWatcher) evaluate(sq *Sequence) (bool, error) {
 	}
 
 	if nsq, found := lw.current(); found {
-		if _, err := nsq.Condition().Query(lw.vars); err != nil {
+		_, err := nsq.Condition().Query(lw.vars)
+		if err != nil {
 			return false, err
-		} else {
-			l.Debug().Interface("next_condition", nsq.Condition().QueryString()).Msg("will wait next sequence")
 		}
+
+		l.Debug().Interface("next_condition", nsq.Condition().QueryString()).Msg("will wait next sequence")
 	}
 
 	return finished, nil

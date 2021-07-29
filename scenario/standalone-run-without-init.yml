@@ -63,22 +63,20 @@ node-config:
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
-            url: {{ .Self.NetworkURL }}
 
     n0:
 
 nodes-config: |
     nodes:{{ range $node, $config := .NodesConfig }}
         - address: {{ index $config "address" }}
-          publickey: {{ index $config "publickey" }}
-          url: {{ index $config "url" }}{{ end }}
+          publickey: {{ index $config "publickey" }}{{ end }}
 
 sequences:
     - condition: >
         {"m": "contest ready"}
       action:
           name: start-nodes
-          args:
+          nodes:
               - n0
 
     - condition: >

@@ -32,16 +32,13 @@ func HookVars(ctx context.Context) (context.Context, error) {
 	var m map[string]interface{}
 	if err := yaml.Unmarshal(configSource, &m); err != nil {
 		return ctx, err
-	} else {
-		vars.Set("Design.Contest", config.SanitizeVarsMap(m))
 	}
+	vars.Set("Design.Contest", config.SanitizeVarsMap(m))
 
 	if i, found := m["vars"]; found {
-		var varsString string
-		if s, ok := i.(string); !ok {
+		varsString, ok := i.(string)
+		if !ok {
 			return ctx, xerrors.Errorf("vars not string, %T", i)
-		} else {
-			varsString = s
 		}
 
 		var bf bytes.Buffer

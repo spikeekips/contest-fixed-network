@@ -82,22 +82,23 @@ func (co *Condition) Query(vars *config.Vars) (bson.M, error) {
 	}
 
 	if !config.IsTemplateCondition(co.queryString) {
-		if i, err := config.ParseConditionQuery(co.queryString); err != nil {
+		i, err := config.ParseConditionQuery(co.queryString)
+		if err != nil {
 			return nil, xerrors.Errorf("invalid compiled condition query string, %q: %w", co.queryString, err)
-		} else {
-			co.query = i
 		}
+		co.query = i
 	}
 
-	if b, err := config.CompileTemplate(co.queryString, vars); err != nil {
+	b, err := config.CompileTemplate(co.queryString, vars)
+	if err != nil {
 		return nil, xerrors.Errorf("failed to compile condition query, %q: %w", co.queryString, err)
-	} else {
-		if i, err := config.ParseConditionQuery(string(b)); err != nil {
-			return nil, xerrors.Errorf("invalid compiled condition query string, %q: %w", co.queryString, err)
-		} else {
-			co.query = i
-		}
 	}
+
+	i, err := config.ParseConditionQuery(string(b))
+	if err != nil {
+		return nil, xerrors.Errorf("invalid compiled condition query string, %q: %w", co.queryString, err)
+	}
+	co.query = i
 
 	co.Log().Debug().Str("col", co.col).Interface("query", co.query).Msg("querying")
 
@@ -108,25 +109,23 @@ func (co *Condition) Check(vars *config.Vars, getStorage func(string) (*Mongodb,
 	if co.storage == nil {
 		uri := co.storageString
 		if config.IsTemplateCondition(uri) {
-			if i, err := config.CompileTemplate(uri, vars); err != nil {
+			i, err := config.CompileTemplate(uri, vars)
+			if err != nil {
 				return nil, false, xerrors.Errorf("failed to compile storage uri: %w", err)
-			} else {
-				uri = string(i)
 			}
+			uri = string(i)
 		}
 
-		if i, err := getStorage(uri); err != nil {
+		i, err := getStorage(uri)
+		if err != nil {
 			return nil, false, err
-		} else {
-			co.storage = i
 		}
+		co.storage = i
 	}
 
-	var query bson.M
-	if i, err := co.Query(vars); err != nil {
+	query, err := co.Query(vars)
+	if err != nil {
 		return nil, false, err
-	} else {
-		query = i
 	}
 
 	switch i, found, err := co.storage.Find(context.Background(), co.col, query); {

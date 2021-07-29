@@ -45,16 +45,14 @@ func NodeRunContainerName(alias string) string {
 }
 
 func TraverseContainers(client *dockerClient.Client, callback func(dockerTypes.Container) (bool, error)) error {
-	var cs []dockerTypes.Container
-	if i, err := client.ContainerList(
+	cs, err := client.ContainerList(
 		context.Background(),
 		dockerTypes.ContainerListOptions{
 			All: true,
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return err
-	} else {
-		cs = i
 	}
 
 	for i := range cs {
@@ -113,9 +111,9 @@ func PullImage(client *dockerClient.Client, image string, update bool) error {
 
 	if _, err := client.ImagePull(context.Background(), image, dockerTypes.ImagePullOptions{}); err != nil {
 		return err
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 func ReadContainerLogs(
@@ -131,11 +129,9 @@ func ReadContainerLogs(
 	for {
 		options.Since = timestamp
 
-		var reader io.Reader
-		if i, err := client.ContainerLogs(ctx, id, options); err != nil {
+		reader, err := client.ContainerLogs(ctx, id, options)
+		if err != nil {
 			return err
-		} else {
-			reader = i
 		}
 
 		if t, err := readContainerLogs(ctx, reader, callback); err != nil {
@@ -175,12 +171,12 @@ func readContainerLogs(ctx context.Context, reader io.Reader, callback func(uint
 			l := make([]byte, count)
 			if _, err := reader.Read(l); err != nil {
 				if bytes.Contains(l, []byte("Error grabbing logs")) {
-					fmt.Fprintf(os.Stderr, "grabbing error: %q\n", string(l))
+					_, _ = fmt.Fprintf(os.Stderr, "grabbing error: %q\n", string(l))
 
 					return timestamp, ContainerLogIgnoreError.Errorf("%s: %w", l, err)
-				} else {
-					return timestamp, xerrors.Errorf("failed to read logs body, %q: %w", string(l), err)
 				}
+
+				return timestamp, xerrors.Errorf("failed to read logs body, %q: %w", string(l), err)
 			}
 
 			s := strings.SplitN(string(l[:len(l)-1]), " ", 2)

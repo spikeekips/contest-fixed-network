@@ -57,21 +57,19 @@ func ProcessLogWatcher(ctx context.Context) (context.Context, error) {
 
 	sqs := make([]*host.Sequence, len(design.Sequences))
 	for i := range design.Sequences {
-		if sq, err := parseSequence(ctx, design.Sequences[i]); err != nil {
+		sq, err := parseSequence(ctx, design.Sequences[i])
+		if err != nil {
 			return ctx, err
-		} else {
-			sqs[i] = sq
 		}
+		sqs[i] = sq
 	}
 
-	var lw *host.LogWatcher
-	if i, err := host.NewLogWatcher(mg, sqs, exitChan, vars); err != nil {
+	lw, err := host.NewLogWatcher(mg, sqs, exitChan, vars)
+	if err != nil {
 		return ctx, err
-	} else {
-		_ = i.SetLogger(log)
-
-		lw = i
 	}
+
+	_ = lw.SetLogger(log)
 
 	return context.WithValue(ctx, host.ContextValueLogWatcher, lw), lw.Start()
 }

@@ -24,59 +24,82 @@ import (
 
 type LoadAction func(context.Context, config.DesignAction) (host.Action, error)
 
-var ActionLoaders = map[string]LoadAction{}
+var ActionLoaders = map[string]LoadAction{
+	"init-nodes":   initNodesActionFunc,
+	"start-nodes":  startNodesActionFunc,
+	"stop-nodes":   stopNodesActionFunc,
+	"stop":         stopActionFunc,
+	"host-command": hostCommandActionFunc,
+}
 
-func init() {
-	ActionLoaders["init-nodes"] = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
-		var hs *host.Hosts
-		if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
-			return nil, err
-		}
-
-		if i, err := NewInitNodesAction(ctx, design.Args); err != nil {
-			return nil, err
-		} else {
-			return i, nil
-		}
+var initNodesActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
+	var hs *host.Hosts
+	if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
+		return nil, err
 	}
 
-	ActionLoaders["start-nodes"] = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
-		var hs *host.Hosts
-		if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
-			return nil, err
-		}
-
-		if i, err := NewStartNodesAction(ctx, design.Args); err != nil {
-			return nil, err
-		} else {
-			return i, nil
-		}
+	var nodes []string
+	switch i, err := findNodesFromDesign(design); {
+	case err != nil:
+		return nil, err
+	case len(i) < 1:
+		return nil, xerrors.Errorf("empty nodes")
+	default:
+		nodes = i
 	}
 
-	ActionLoaders["stop-nodes"] = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
-		var hs *host.Hosts
-		if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
-			return nil, err
-		}
+	return NewInitNodesAction(ctx, nodes)
+}
 
-		if i, err := NewStopNodesAction(ctx, design.Args); err != nil {
-			return nil, err
-		} else {
-			return i, nil
-		}
+var startNodesActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
+	var vars *config.Vars
+	if err := config.LoadVarsContextValue(ctx, &vars); err != nil {
+		return nil, err
 	}
 
-	ActionLoaders["stop"] = func(context.Context, config.DesignAction) (host.Action, error) {
-		return StopAction{}, nil
+	var hs *host.Hosts
+	if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
+		return nil, err
 	}
 
-	ActionLoaders["host-command"] = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
-		if i, err := NewHostCommandAction(ctx, design.Args); err != nil {
-			return nil, err
-		} else {
-			return i, nil
-		}
+	var nodes []string
+	switch i, err := findNodesFromDesign(design); {
+	case err != nil:
+		return nil, err
+	case len(i) < 1:
+		return nil, xerrors.Errorf("empty nodes")
+	default:
+		nodes = i
 	}
+
+	return NewStartNodesAction(ctx, nodes, design.Args)
+}
+
+var stopNodesActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
+	var hs *host.Hosts
+	if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
+		return nil, err
+	}
+
+	var nodes []string
+	switch i, err := findNodesFromDesign(design); {
+	case err != nil:
+		return nil, err
+	case len(i) < 1:
+		return nil, xerrors.Errorf("empty nodes")
+	default:
+		nodes = i
+	}
+
+	return NewStopNodesAction(ctx, nodes)
+}
+
+var stopActionFunc = func(context.Context, config.DesignAction) (host.Action, error) {
+	return StopAction{}, nil
+}
+
+var hostCommandActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
+	return NewHostCommandAction(ctx, design.Args)
 }
 
 type BaseNodesAction struct {
@@ -102,11 +125,9 @@ func NewBaseNodesAction(ctx context.Context, name string, aliases []string) (*Ba
 		return nil, err
 	}
 
-	var nodes []*host.Node
-	if i, err := filterNodes(hosts, aliases); err != nil {
+	nodes, err := filterNodes(hosts, aliases)
+	if err != nil {
 		return nil, err
-	} else {
-		nodes = i
 	}
 
 	action := &BaseNodesAction{
@@ -146,38 +167,32 @@ func (ac *BaseNodesAction) createContainer(
 	name,
 	t string,
 ) (string, error) {
-	var hostConfig *container.HostConfig
-	if i, err := ac.hostConfig(node); err != nil {
+	hostConfig, err := ac.hostConfig(node)
+	if err != nil {
 		return "", err
-	} else {
-		hostConfig = i
 	}
 
-	if r, err := node.Host().DockerClient().ContainerCreate(
+	r, err := node.Host().DockerClient().ContainerCreate(
 		ctx,
 		ac.mainConfig(node, commands, t),
 		hostConfig,
 		nil,
 		nil,
 		name,
-	); err != nil {
+	)
+	if err != nil {
 		return "", xerrors.Errorf("failed to create container: %w", err)
-	} else {
-		return r.ID, nil
 	}
+	return r.ID, nil
 }
 
-func (ac *BaseNodesAction) startContainer(ctx context.Context, node *host.Node, id string) error {
+func (*BaseNodesAction) startContainer(ctx context.Context, node *host.Node, id string) error {
 	client := node.Host().DockerClient()
-	if err := client.ContainerStart(
+	return client.ContainerStart(
 		ctx,
 		id,
 		dockerTypes.ContainerStartOptions{},
-	); err != nil {
-		return err
-	}
-
-	return nil
+	)
 }
 
 func (ac *BaseNodesAction) containerLogs(ctx context.Context, node *host.Node, id string) error {
@@ -204,7 +219,7 @@ func (ac *BaseNodesAction) containerLogs(ctx context.Context, node *host.Node, i
 	return nil
 }
 
-func (ac *BaseNodesAction) waitContainer(
+func (*BaseNodesAction) waitContainer(
 	ctx context.Context,
 	node *host.Node,
 	id string,
@@ -228,7 +243,7 @@ func (ac *BaseNodesAction) waitContainer(
 	}
 }
 
-func (ac *BaseNodesAction) mainConfig(node *host.Node, commands []string, t string) *container.Config {
+func (*BaseNodesAction) mainConfig(node *host.Node, commands []string, t string) *container.Config {
 	portSet := nat.PortSet{}
 	for source := range node.PortMap() {
 		portSet[source] = struct{}{}
@@ -248,7 +263,7 @@ func (ac *BaseNodesAction) mainConfig(node *host.Node, commands []string, t stri
 	}
 }
 
-func (ac *BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, error) {
+func (*BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, error) {
 	dataDir := filepath.Join(node.Host().BaseDir(), node.Alias())
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dataDir, 0o700); err != nil {
@@ -286,49 +301,68 @@ func (ac *BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, e
 
 type StartNodesAction struct {
 	*BaseNodesAction
+	vars *config.Vars
+	args []string
 }
 
-func NewStartNodesAction(ctx context.Context, aliases []string) (*StartNodesAction, error) {
-	if b, err := NewBaseNodesAction(ctx, "start-nodes", aliases); err != nil {
+func NewStartNodesAction(ctx context.Context, aliases []string, args []string) (*StartNodesAction, error) {
+	var vars *config.Vars
+	if err := config.LoadVarsContextValue(ctx, &vars); err != nil {
 		return nil, err
-	} else {
-		return &StartNodesAction{
-			BaseNodesAction: b,
-		}, nil
 	}
+
+	b, err := NewBaseNodesAction(ctx, "start-nodes", aliases)
+	if err != nil {
+		return nil, err
+	}
+	return &StartNodesAction{
+		BaseNodesAction: b,
+		vars:            vars,
+		args:            args,
+	}, nil
 }
 
 func (ac *StartNodesAction) Run(ctx context.Context) error {
-	var ids map[string]string
-	if i, err := filterRunningContainers(ac.nodes, true); err != nil {
+	ids, err := filterRunningContainers(ac.nodes, true)
+	if err != nil {
 		return err
-	} else {
-		ids = i
 	}
 
 	return host.RunWaitGroup(len(ac.nodes), func(i int) error {
-		if id, found := ids[ac.nodes[i].Alias()]; !found {
+		id, found := ids[ac.nodes[i].Alias()]
+		if !found {
 			return nil
-		} else {
-			return ac.run(ctx, ac.nodes[i], id)
 		}
+
+		return ac.run(ctx, ac.nodes[i], id)
 	})
 }
 
 func (ac *StartNodesAction) run(ctx context.Context, node *host.Node, id string) error {
+	args, err := ac.compileArgs()
+	if err != nil {
+		return err
+	}
+
+	cmds := make([]string, len(host.DefaultContainerCmdNodeRun)+len(args))
+	copy(cmds[:len(host.DefaultContainerCmdNodeRun)], host.DefaultContainerCmdNodeRun)
+	copy(cmds[len(host.DefaultContainerCmdNodeRun):], args)
+
 	if len(id) < 1 {
-		if i, err := ac.createContainer(
+		i, err := ac.createContainer(
 			ctx,
 			node,
-			host.DefaultContainerCmdNodeRun,
+			cmds,
 			host.NodeRunContainerName(node.Alias()),
 			"run",
-		); err != nil {
+		)
+		if err != nil {
 			return err
-		} else {
-			id = i
 		}
+		id = i
 	}
+
+	ac.Log().Debug().Strs("commands", cmds).Msg("trying to run node")
 
 	if err := ac.startContainer(ctx, node, id); err != nil {
 		return err
@@ -360,35 +394,59 @@ func (ac StartNodesAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ac.Map())
 }
 
+func (ac StartNodesAction) compileArgs() ([]string, error) {
+	if len(ac.args) < 1 {
+		return nil, nil
+	}
+
+	compiled := make([]string, len(ac.args))
+	for i := range ac.args {
+		c, err := ac.compileArg(ac.args[i])
+		if err != nil {
+			return nil, err
+		}
+		compiled[i] = c
+	}
+
+	return compiled, nil
+}
+
+func (ac StartNodesAction) compileArg(s string) (string, error) {
+	b, err := config.CompileTemplate(s, ac.vars)
+	if err != nil {
+		return "", xerrors.Errorf("failed to compile arg, %q: %w", s, err)
+	}
+
+	return string(b), nil
+}
+
 type StopNodesAction struct {
 	*BaseNodesAction
 }
 
 func NewStopNodesAction(ctx context.Context, aliases []string) (*StopNodesAction, error) {
-	if b, err := NewBaseNodesAction(ctx, "stop-nodes", aliases); err != nil {
+	b, err := NewBaseNodesAction(ctx, "stop-nodes", aliases)
+	if err != nil {
 		return nil, err
-	} else {
-		return &StopNodesAction{
-			BaseNodesAction: b,
-		}, nil
 	}
+	return &StopNodesAction{
+		BaseNodesAction: b,
+	}, nil
 }
 
 func (ac *StopNodesAction) Run(ctx context.Context) error {
-	var ids map[string]string
-	if i, err := filterRunningContainers(ac.nodes, false); err != nil {
+	ids, err := filterRunningContainers(ac.nodes, false)
+	if err != nil {
 		return err
-	} else {
-		ids = i
 	}
 
 	return host.RunWaitGroup(len(ac.nodes), func(i int) error {
 		node := ac.nodes[i]
-		if id, found := ids[node.Alias()]; !found {
+		id, found := ids[node.Alias()]
+		if !found {
 			return nil
-		} else {
-			return node.Host().DockerClient().ContainerStop(ctx, id, nil)
 		}
+		return node.Host().DockerClient().ContainerStop(ctx, id, nil)
 	})
 }
 
@@ -401,45 +459,43 @@ type InitNodesAction struct {
 }
 
 func NewInitNodesAction(ctx context.Context, aliases []string) (*InitNodesAction, error) {
-	if b, err := NewBaseNodesAction(ctx, "init-nodes", aliases); err != nil {
+	b, err := NewBaseNodesAction(ctx, "init-nodes", aliases)
+	if err != nil {
 		return nil, err
-	} else {
-		return &InitNodesAction{
-			BaseNodesAction: b,
-		}, nil
 	}
+	return &InitNodesAction{
+		BaseNodesAction: b,
+	}, nil
 }
 
 func (ac *InitNodesAction) Run(ctx context.Context) error {
-	var ids map[string]string
-	if i, err := filterRunningContainers(ac.nodes, true); err != nil {
+	ids, err := filterRunningContainers(ac.nodes, true)
+	if err != nil {
 		return err
-	} else {
-		ids = i
 	}
 
 	return host.RunWaitGroup(len(ac.nodes), func(i int) error {
-		if id, found := ids[ac.nodes[i].Alias()]; !found {
+		id, found := ids[ac.nodes[i].Alias()]
+		if !found {
 			return nil
-		} else {
-			return ac.run(ctx, ac.nodes[i], id)
 		}
+		return ac.run(ctx, ac.nodes[i], id)
 	})
 }
 
 func (ac *InitNodesAction) run(ctx context.Context, node *host.Node, id string) error {
 	if len(id) < 1 {
-		if i, err := ac.createContainer(
+		i, err := ac.createContainer(
 			ctx,
 			node,
 			host.DefaultContainerCmdNodeInit,
 			host.NodeInitContainerName(node.Alias()),
 			"init",
-		); err != nil {
+		)
+		if err != nil {
 			return err
-		} else {
-			id = i
 		}
+		id = i
 	}
 
 	if err := ac.startContainer(ctx, node, id); err != nil {
@@ -450,23 +506,25 @@ func (ac *InitNodesAction) run(ctx context.Context, node *host.Node, id string) 
 		return err
 	}
 
-	if msg, err := ac.waitContainer(context.Background(), node, id, container.WaitConditionNotRunning); err != nil {
+	msg, err := ac.waitContainer(context.Background(), node, id, container.WaitConditionNotRunning)
+	if err != nil {
 		return err
-	} else {
-		if msg.Err != nil {
-			msg.Msg = "init node stopped with error"
-		} else {
-			msg.Msg = "init node stopped without error"
-		}
-
-		if e, err := host.NewNodeLogEntryWithInterface(node.Alias(), msg, msg.StatusCode != 0); err != nil {
-			return err
-		} else {
-			ac.lo.LogEntryChan() <- e
-
-			return nil
-		}
 	}
+
+	if msg.Err != nil {
+		msg.Msg = "init node stopped with error"
+	} else {
+		msg.Msg = "init node stopped without error"
+	}
+
+	e, err := host.NewNodeLogEntryWithInterface(node.Alias(), msg, msg.StatusCode != 0)
+	if err != nil {
+		return err
+	}
+
+	ac.lo.LogEntryChan() <- e
+
+	return nil
 }
 
 func (ac InitNodesAction) MarshalJSON() ([]byte, error) {
@@ -475,11 +533,11 @@ func (ac InitNodesAction) MarshalJSON() ([]byte, error) {
 
 type StopAction struct{}
 
-func (ac StopAction) Name() string {
+func (StopAction) Name() string {
 	return "stop"
 }
 
-func (ac StopAction) Run(ctx context.Context) error {
+func (StopAction) Run(ctx context.Context) error {
 	var exitChan chan error
 	if err := LoadExitChanContextValue(ctx, &exitChan); err != nil {
 		return err
@@ -492,7 +550,7 @@ func (ac StopAction) Run(ctx context.Context) error {
 	return nil
 }
 
-func (ac StopAction) MarshalJSON() ([]byte, error) {
+func (StopAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{"name": "stop"})
 }
 
@@ -551,7 +609,7 @@ func NewHostCommandAction(ctx context.Context, args []string) (host.Action, erro
 	return action, nil
 }
 
-func (ac *HostCommandAction) Name() string {
+func (*HostCommandAction) Name() string {
 	return "host-command"
 }
 
@@ -563,18 +621,18 @@ func (ac *HostCommandAction) Map() map[string]interface{} {
 }
 
 func (ac *HostCommandAction) Run(ctx context.Context) error {
-	fmt.Fprintf(os.Stderr, "> input command: \n%s\n", ac.command)
+	_, _ = fmt.Fprintf(os.Stderr, "> input command: \n%s\n", ac.command)
 
-	var compiled string
-	if i, err := config.CompileTemplate(ac.command, ac.vars); err != nil {
+	i, err := config.CompileTemplate(ac.command, ac.vars)
+	if err != nil {
 		return err
-	} else {
-		compiled = string(i)
 	}
+
+	compiled := string(i)
 
 	ac.Log().Debug().Str("command", compiled).Msg("command compiled")
 	if ac.Log().GetLevel() <= zerolog.DebugLevel {
-		fmt.Fprintf(os.Stderr, "< compiled command: \n%s\n", compiled)
+		_, _ = fmt.Fprintf(os.Stderr, "< compiled command: \n%s\n", compiled)
 	}
 
 	ac.Log().Debug().Msg("running command")
@@ -585,8 +643,8 @@ func (ac *HostCommandAction) Run(ctx context.Context) error {
 	stdout, stderr, err := ac.local.ShellExec(nctx, "/bin/sh", []string{"-c", compiled})
 	stdoutOut, _ := ioutil.ReadAll(stdout)
 	stderrOut, _ := ioutil.ReadAll(stderr)
-	fmt.Fprintf(os.Stderr, "= stdout: \n%s\n", string(stdoutOut))
-	fmt.Fprintf(os.Stderr, "= stderr: \n%s\n", string(stderrOut))
+	_, _ = fmt.Fprintf(os.Stderr, "= stdout: \n%s\n", string(stdoutOut))
+	_, _ = fmt.Fprintf(os.Stderr, "= stderr: \n%s\n", string(stderrOut))
 
 	if err != nil {
 		l := ac.Log().Error().Err(err).Str("stderr", string(stderrOut))
@@ -608,4 +666,27 @@ func (ac *HostCommandAction) Run(ctx context.Context) error {
 
 func (ac HostCommandAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ac.Map())
+}
+
+func findNodesFromDesign(design config.DesignAction) ([]string, error) {
+	i, found := design.Extra["nodes"]
+	if !found {
+		return nil, nil
+	}
+
+	j, ok := i.([]interface{})
+	if !ok {
+		return nil, xerrors.Errorf("nodes is not slice type, %T", i)
+	}
+
+	nodes := make([]string, len(j))
+	for k := range j {
+		m, ok := j[k].(string)
+		if !ok {
+			return nil, xerrors.Errorf("node is not string type, %T", j[k])
+		}
+		nodes[k] = m
+	}
+
+	return nodes, nil
 }

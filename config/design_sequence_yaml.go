@@ -27,27 +27,28 @@ func (de DesignSequenceYAML) Merge() (DesignSequence, error) {
 	}
 
 	if de.Action != nil {
-		if i, err := de.Action.Merge(); err != nil {
+		i, err := de.Action.Merge()
+		if err != nil {
 			return design, err
-		} else {
-			design.Action = i
 		}
+		design.Action = i
 	}
 
 	if de.Register != nil {
-		if i, err := de.Register.Merge(); err != nil {
+		i, err := de.Register.Merge()
+		if err != nil {
 			return design, err
-		} else {
-			design.Register = i
 		}
+		design.Register = i
 	}
 
 	return design, nil
 }
 
 type DesignActionYAML struct {
-	Name *string
-	Args *[]string
+	Name  *string
+	Args  *[]string
+	Extra map[string]interface{} `yaml:",inline"`
 }
 
 func (de DesignActionYAML) Merge() (DesignAction, error) {
@@ -67,7 +68,7 @@ func (de DesignActionYAML) Merge() (DesignAction, error) {
 		}
 	}
 
-	return DesignAction{Name: *de.Name, Args: args}, nil
+	return DesignAction{Name: *de.Name, Args: args, Extra: de.Extra}, nil
 }
 
 type DesignRegisterYAML struct {
@@ -79,19 +80,19 @@ func (de DesignRegisterYAML) Merge() (DesignRegister, error) {
 	design := DesignRegister{}
 
 	if de.Type != nil {
-		if s := strings.TrimSpace(*de.Type); len(s) < 1 {
+		s := strings.TrimSpace(*de.Type)
+		if len(s) < 1 {
 			return design, xerrors.Errorf("empty type")
-		} else {
-			design.Type = DesignRegisterType(s)
 		}
+		design.Type = DesignRegisterType(s)
 	}
 
 	if de.To != nil {
-		if s := strings.TrimSpace(*de.To); len(s) < 1 {
+		s := strings.TrimSpace(*de.To)
+		if len(s) < 1 {
 			return design, xerrors.Errorf("empty to")
-		} else {
-			design.To = s
 		}
+		design.To = s
 	}
 
 	return design, nil

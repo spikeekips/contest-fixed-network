@@ -39,11 +39,9 @@ func HookBase(ctx context.Context) (context.Context, error) {
 		logDir = filepath.Clean(logDir)
 	}
 
-	var testDir string
-	if i, err := filepath.Abs(filepath.Join(logDir, testName)); err != nil {
+	testDir, err := filepath.Abs(filepath.Join(logDir, testName))
+	if err != nil {
 		return ctx, err
-	} else {
-		testDir = i
 	}
 
 	if _, err := os.Stat(testDir); os.IsNotExist(err) {

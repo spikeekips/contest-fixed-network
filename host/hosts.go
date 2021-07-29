@@ -125,10 +125,9 @@ func (hs *Hosts) Close() error {
 			l.Error().Err(err).Msg("failed to close host")
 
 			return err
-		} else {
-			l.Debug().Msg("host closed")
-
-			return nil
 		}
+		l.Debug().Msg("host closed")
+
+		return nil
 	})
 }

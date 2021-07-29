@@ -43,11 +43,9 @@ func NewNodeLogEntry(node string, msg []byte, isError bool) (NodeLogEntry, error
 }
 
 func NewNodeLogEntryWithInterface(node string, i interface{}, isError bool) (NodeLogEntry, error) {
-	var b []byte
-	if i, err := json.Marshal(i); err != nil {
+	b, err := json.Marshal(i)
+	if err != nil {
 		return NodeLogEntry{}, err
-	} else {
-		b = i
 	}
 
 	return NewNodeLogEntry(node, b, isError)

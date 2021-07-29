@@ -9,11 +9,11 @@ import (
 func MergeItem(a, b interface{}) (map[string]interface{}, error) {
 	m := mergeItem(reflect.ValueOf(a), reflect.ValueOf(b)).Interface()
 
-	if i, ok := m.(map[string]interface{}); !ok {
+	i, ok := m.(map[string]interface{})
+	if !ok {
 		return nil, xerrors.Errorf("merged node config is not type of map[string]interface{}, %T", m)
-	} else {
-		return i, nil
 	}
+	return i, nil
 }
 
 func mergeMap(a, b reflect.Value) reflect.Value {

@@ -72,13 +72,13 @@ func (ho *LocalHost) BaseDir() string {
 }
 
 func (ho *LocalHost) Connect() error {
-	if c, err := dockerClient.NewClientWithOpts(
+	c, err := dockerClient.NewClientWithOpts(
 		dockerClient.FromEnv,
-	); err != nil {
+	)
+	if err != nil {
 		return err
-	} else {
-		ho.client = c
 	}
+	ho.client = c
 
 	return ho.setRunner(ho.runner)
 }
@@ -232,13 +232,13 @@ func (ho *LocalHost) AvailablePort(name, network string) (string, error) {
 		i++
 	}
 
-	if port, err := AvailablePort(network, excludes); err != nil {
+	port, err := AvailablePort(network, excludes)
+	if err != nil {
 		return "", err
-	} else {
-		ho.ports[name] = port
-
-		return port, nil
 	}
+	ho.ports[name] = port
+
+	return port, nil
 }
 
 func (ho *LocalHost) Nodes() map[string]*Node {
@@ -267,7 +267,7 @@ func (ho *LocalHost) MongodbURI() string {
 	return ho.mongodbURI
 }
 
-func (ho *LocalHost) ShellExec(ctx context.Context, name string, args []string) (io.ReadCloser, io.ReadCloser, error) {
+func (*LocalHost) ShellExec(ctx context.Context, name string, args []string) (io.ReadCloser, io.ReadCloser, error) {
 	nctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -297,13 +297,12 @@ func (ho *LocalHost) setRunner(f string) error {
 		_ = source.Close()
 	}()
 
-	if s, err := os.OpenFile(
+	dest, err := os.OpenFile(
 		filepath.Join(ho.baseDir, "runner"),
 		os.O_RDWR|os.O_CREATE, sourceStat.Mode(),
-	); err != nil {
+	)
+	if err != nil {
 		return xerrors.Errorf("failed to create new runner file: %w", err)
-	} else {
-		dest = s
 	}
 	defer func() {
 		_ = dest.Close()
@@ -340,7 +339,7 @@ func (ho *LocalHost) launchMongodb() error {
 func (ho *LocalHost) createMongodb() error {
 	source, _ := nat.NewPort("tcp", "27017")
 
-	if r, err := ho.client.ContainerCreate(
+	r, err := ho.client.ContainerCreate(
 		context.Background(),
 		&container.Config{
 			Tty:   false,
@@ -354,13 +353,13 @@ func (ho *LocalHost) createMongodb() error {
 		nil,
 		nil,
 		MongodbContainerName(),
-	); err != nil {
+	)
+	if err != nil {
 		return xerrors.Errorf("failed to create mongodb container: %w", err)
-	} else {
-		ho.mongodbContainerID = r.ID
-
-		return nil
 	}
+	ho.mongodbContainerID = r.ID
+
+	return nil
 }
 
 func (ho *LocalHost) startMongodb() error {

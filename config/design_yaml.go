@@ -22,34 +22,34 @@ func (de DesignYAML) Merge() (Design, error) {
 		design.StorageString = strings.TrimSpace(*de.Storage)
 	}
 
-	if i, err := de.mergeHosts(); err != nil {
+	i, err := de.mergeHosts()
+	if err != nil {
 		return design, err
-	} else {
-		design.Hosts = i
 	}
+	design.Hosts = i
 
-	if i, j, err := de.mergeNodeConfigs(); err != nil {
+	j, k, err := de.mergeNodeConfigs()
+	if err != nil {
 		return design, err
-	} else {
-		design.NodeConfig = i
-		design.CommonNodeConfig = j
 	}
+	design.NodeConfig = j
+	design.CommonNodeConfig = k
 
 	if de.NodesConfig != nil {
 		design.NodesConfig = *de.NodesConfig
 	}
 
-	if i, err := de.mergeSequences(); err != nil {
+	m, err := de.mergeSequences()
+	if err != nil {
 		return design, err
-	} else {
-		design.Sequences = i
 	}
+	design.Sequences = m
 
-	if i, err := de.mergeEtc(design); err != nil {
+	n, err := de.mergeEtc(design)
+	if err != nil {
 		return design, err
-	} else {
-		design = i
 	}
+	design = n
 
 	return design, nil
 }
@@ -62,11 +62,11 @@ func (de DesignYAML) mergeHosts() ([]DesignHost, error) {
 	hosts := make([]DesignHost, len(de.Hosts))
 	for i := range de.Hosts {
 		h := de.Hosts[i]
-		if d, err := h.Merge(); err != nil {
+		d, err := h.Merge()
+		if err != nil {
 			return nil, err
-		} else {
-			hosts[i] = d
 		}
+		hosts[i] = d
 	}
 
 	return hosts, nil
@@ -88,11 +88,11 @@ func (de DesignYAML) mergeNodeConfigs() (map[string]string, string, error) {
 		}
 
 		if v := de.NodeConfig[k]; v != nil {
-			if s, ok := v.(string); !ok {
+			s, ok := v.(string)
+			if !ok {
 				return nil, "", xerrors.Errorf("node config should be string, not %T", v)
-			} else {
-				nodeConfig[k] = s
 			}
+			nodeConfig[k] = s
 		} else {
 			nodeConfig[k] = ""
 		}
@@ -104,11 +104,11 @@ func (de DesignYAML) mergeNodeConfigs() (map[string]string, string, error) {
 func (de DesignYAML) mergeSequences() ([]DesignSequence, error) {
 	ss := make([]DesignSequence, len(de.Sequences))
 	for i := range de.Sequences {
-		if d, err := de.Sequences[i].Merge(); err != nil {
+		d, err := de.Sequences[i].Merge()
+		if err != nil {
 			return nil, err
-		} else {
-			ss[i] = d
 		}
+		ss[i] = d
 	}
 
 	return ss, nil
@@ -147,11 +147,11 @@ func (de DesignHostYAML) Merge() (DesignHost, error) {
 	}
 
 	if de.SSH != nil {
-		if d, err := de.SSH.Merge(); err != nil {
+		d, err := de.SSH.Merge()
+		if err != nil {
 			return design, err
-		} else {
-			design.SSH = d
 		}
+		design.SSH = d
 	}
 
 	return design, nil

@@ -86,14 +86,7 @@ func (no *Node) Prepare(commonDesign, design string, vars *config.Vars) (map[str
 
 	nvars := no.prepareVars(vars)
 
-	var shared map[string]interface{}
-	if i, err := no.prepareNodeConfig(nvars); err != nil {
-		return nil, err
-	} else {
-		shared = i
-	}
-
-	return shared, nil
+	return no.prepareNodeConfig(nvars)
 }
 
 func (no *Node) prepareNodeConfig(vars *config.Vars) (map[string]interface{}, error) {
@@ -120,12 +113,12 @@ func (no *Node) prepareNodeConfig(vars *config.Vars) (map[string]interface{}, er
 		shared[k[1:]] = merged[k]
 	}
 
-	if b, err := yaml.Marshal(filtered); err != nil {
+	b, err := yaml.Marshal(filtered)
+	if err != nil {
 		return nil, err
-	} else {
-		no.configMap = config.SanitizeVarsMap(filtered).(map[string]interface{})
-		no.configData = bytes.TrimSpace(b)
 	}
+	no.configMap = config.SanitizeVarsMap(filtered).(map[string]interface{})
+	no.configData = bytes.TrimSpace(b)
 
 	return shared, nil
 }
@@ -147,41 +140,40 @@ func (no *Node) containerBindPort(name, network, sourcePort string) string {
 	no.templateLock.Lock()
 	defer no.templateLock.Unlock()
 
-	if port, err := no.host.AvailablePort(name, network); err != nil {
+	port, err := no.host.AvailablePort(name, network)
+	if err != nil {
 		panic(err)
-	} else {
-		var found bool
-
-	end:
-		for _, ps := range no.portMap {
-			for i := range ps {
-				if ps[i].HostPort == port {
-					found = true
-
-					break end
-				}
-			}
-		}
-		if !found {
-			if source, err := nat.NewPort(network, sourcePort); err != nil {
-				panic(err)
-			} else {
-				no.portMap[source] = []nat.PortBinding{
-					{HostIP: "", HostPort: port},
-				}
-			}
-		}
-
-		return port
 	}
+
+	var found bool
+
+end:
+	for _, ps := range no.portMap {
+		for i := range ps {
+			if ps[i].HostPort == port {
+				found = true
+
+				break end
+			}
+		}
+	}
+	if !found {
+		if source, err := nat.NewPort(network, sourcePort); err != nil {
+			panic(err)
+		} else {
+			no.portMap[source] = []nat.PortBinding{
+				{HostIP: "", HostPort: port},
+			}
+		}
+	}
+
+	return port
 }
 
 func parseTemplateConfig(s string, vars *config.Vars) (map[string]interface{}, error) {
-	var p []byte
-	if i, err := config.CompileTemplate(s, vars); err != nil {
+	p, err := config.CompileTemplate(s, vars)
+	if err != nil {
 		return nil, err
-	} else {
-		p = i
 	}
 
 	var m map[string]interface{}

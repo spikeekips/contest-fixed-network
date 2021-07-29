@@ -25,8 +25,9 @@ func (de *DesignSequence) IsValid([]byte) error {
 }
 
 type DesignAction struct {
-	Name string
-	Args []string
+	Name  string
+	Args  []string
+	Extra map[string]interface{}
 }
 
 func (de DesignAction) IsEmpty() bool {
@@ -93,11 +94,7 @@ func (de *DesignRegister) IsValid([]byte) error {
 		return xerrors.Errorf("type and to empty")
 	}
 
-	if err := de.Type.IsValid(nil); err != nil {
-		return err
-	}
-
-	return nil
+	return de.Type.IsValid(nil)
 }
 
 func IsTemplateCondition(s string) bool {

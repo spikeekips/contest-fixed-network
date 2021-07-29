@@ -50,10 +50,10 @@ type Action interface {
 
 type NullAction struct{}
 
-func (ac NullAction) Name() string {
+func (NullAction) Name() string {
 	return "null-action"
 }
 
-func (ac NullAction) Run(context.Context) error {
+func (NullAction) Run(context.Context) error {
 	return nil
 }

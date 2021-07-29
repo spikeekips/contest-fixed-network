@@ -13,15 +13,16 @@ var (
 )
 
 func LoadExitErrorContextValue(ctx context.Context, l *error) error {
-	if err := util.LoadFromContextValue(ctx, ContextValueExitError, l); err != nil {
-		if xerrors.Is(err, util.ContextValueNotFoundError) {
-			return nil
-		}
-
-		return err
-	} else {
+	err := util.LoadFromContextValue(ctx, ContextValueExitError, l)
+	if err == nil {
 		return nil
 	}
+
+	if xerrors.Is(err, util.ContextValueNotFoundError) {
+		return nil
+	}
+
+	return err
 }
 
 func LoadExitChanContextValue(ctx context.Context, l *chan error) error {

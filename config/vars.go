@@ -182,10 +182,10 @@ func NormalizeVarsKey(s string) string {
 
 func getVar(v interface{}, keys string) (interface{}, bool) {
 	m := v
-	for _, key := range strings.Split(keys, ".") {
+	for _, k := range strings.Split(keys, ".") {
 		if i, ok := m.(map[string]interface{}); !ok {
 			return nil, false
-		} else if j, found := i[key]; !found {
+		} else if j, found := i[k]; !found {
 			return nil, false
 		} else {
 			m = j
@@ -208,10 +208,10 @@ func setVar(m map[string]interface{}, keys string, v interface{}) error {
 	}
 
 	l := m
-	for _, key := range ks[:len(ks)-1] {
-		if j, found := l[key]; !found {
-			l[key] = map[string]interface{}{}
-			l = l[key].(map[string]interface{})
+	for _, k := range ks[:len(ks)-1] {
+		if j, found := l[k]; !found {
+			l[k] = map[string]interface{}{}
+			l = l[k].(map[string]interface{})
 		} else {
 			l = j.(map[string]interface{})
 		}

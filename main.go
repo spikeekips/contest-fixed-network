@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	Version string = "v0.0.0"
-	options        = []kong.Option{
+	Version = "v0.0.0"
+	options = []kong.Option{
 		kong.Name("mitum-contest"),
 		kong.Description("mitum contest"),
 		mitumcmds.LogVars,
@@ -32,13 +32,13 @@ type mainflags struct {
 
 func main() {
 	flags := mainflags{}
-	if r, err := cmds.NewRunCommand(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+	i, err := cmds.NewRunCommand()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 
 		os.Exit(1)
-	} else {
-		flags.RunContest = r
 	}
+	flags.RunContest = i
 
 	ctx := kong.Parse(&flags, options...)
 

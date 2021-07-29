@@ -32,11 +32,11 @@ func filterNodes(hosts *host.Hosts, aliases []string) ([]*host.Node, error) {
 	} else if l > 1 {
 		founds := map[string]struct{}{}
 		for _, alias := range aliases {
-			if _, found := founds[alias]; found {
+			_, found := founds[alias]
+			if found {
 				return nil, xerrors.Errorf("duplicated node, %q found", alias)
-			} else {
-				founds[alias] = struct{}{}
 			}
+			founds[alias] = struct{}{}
 		}
 	}
 
@@ -213,24 +213,21 @@ func newHost(ctx context.Context, de config.DesignHost, nodeDesigns map[string]s
 }
 
 func parseSequence(ctx context.Context, design config.DesignSequence) (*host.Sequence, error) {
-	var condition *host.Condition
-	if i, err := host.NewCondition(
+	condition, err := host.NewCondition(
 		ctx,
 		design.Condition.Query,
 		design.Condition.Storage,
 		design.Condition.Col,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, err
-	} else {
-		condition = i
 	}
 
 	var action host.Action = host.NullAction{}
 	if !design.Action.IsEmpty() {
-		if i, err := parseSequenceAction(ctx, design.Action); err != nil {
+		action, err = parseSequenceAction(ctx, design.Action)
+		if err != nil {
 			return nil, err
-		} else {
-			action = i
 		}
 	}
 
@@ -298,7 +295,10 @@ func generateNodesConfig(ctx context.Context, design config.Design, hosts *host.
 			ns[k] = s[k]
 		}
 
-		nodesVars := config.NewVars(map[string]interface{}{"NodesConfig": ns})
+		nodesVars := vars.Clone(map[string]interface{}{
+			"NodesConfig": ns,
+			"Alias":       node.Alias(),
+		})
 
 		var bf bytes.Buffer
 		if t, err := template.New("nodes-config").Funcs(nodesVars.FuncMap()).Parse(design.NodesConfig); err != nil {

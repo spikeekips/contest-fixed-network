@@ -42,9 +42,8 @@ func HookCleanContainers(ctx context.Context) (context.Context, error) {
 		log.Error().Err(err).Msg("failed to clean containers")
 
 		return ctx, err
-	} else {
-		log.Debug().Msg("containers cleaned")
-
-		return ctx, nil
 	}
+	log.Debug().Msg("containers cleaned")
+
+	return ctx, nil
 }

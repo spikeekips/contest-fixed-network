@@ -73,7 +73,6 @@ node-config:
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
-            url: {{ .Self.NetworkURL }}
 
     n0:
     n1:
@@ -82,15 +81,14 @@ node-config:
 nodes-config: |
     nodes:{{ range $node, $config := .NodesConfig }}
         - address: {{ index $config "address" }}
-          publickey: {{ index $config "publickey" }}
-          url: {{ index $config "url" }}{{ end }}
+          publickey: {{ index $config "publickey" }}{{ end }}
 
 sequences:
     - condition: >
         {"m": "contest ready"}
       action:
           name: init-nodes
-          args:
+          nodes:
               - n0
 
     - condition: >
@@ -100,9 +98,21 @@ sequences:
         {"node": "n0", "x.m": "genesis block created"}
       action:
           name: start-nodes
-          args:
+          nodes:
               - n0
               - n1
+          args:
+              - "--discovery"
+              - "{{ .Design.Node.n0.Network.URL }}"
+              - "--discovery"
+              - "{{ .Design.Node.n1.Network.URL }}"
+              - "--discovery"
+              - "{{ .Design.Node.n2.Network.URL }}"
+
+    - condition: >
+        {"node": "n0", "x.m": "joined network"}
+    - condition: >
+        {"node": "n1", "x.m": "joined network"}
 
     - condition: >
         {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
@@ -110,8 +120,18 @@ sequences:
         {"node": "n1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
       action:
           name: start-nodes
-          args:
+          nodes:
               - n2
+          args:
+              - "--discovery"
+              - "{{ .Design.Node.n0.Network.URL }}"
+              - "--discovery"
+              - "{{ .Design.Node.n1.Network.URL }}"
+              - "--discovery"
+              - "{{ .Design.Node.n2.Network.URL }}"
+
+    - condition: >
+        {"node": "n2", "x.m": "joined network"}
 
     - condition: >
         {"node": "n2", "x.state_context.from": "BOOTING", "x.state_context.to": "SYNCING"}

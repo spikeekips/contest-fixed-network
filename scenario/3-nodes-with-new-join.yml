@@ -1,14 +1,20 @@
 # This scenario will test,
 # - 3 nodes, `n0`, `n1`, `n2`
-# - only 2 nodes are suffrage nodes, `n0` and `n1`
-# - `n2` is none-suffrage node
-# - all nodes starts
-# - `n2` should sync with suffrage nodes
+# - threshold is 100
+# - `n0`: *init* before *run*
+# - all nodes, starts
+# - new node, `n3` starts
+# - `n3` has same node with `n2`, but has different publish url
+# - `n2` suspended
+# - the nodes, except n2 will work successfully
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
     {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok:btc-priv-v0.0.1" }}
     {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG:btc-pub-v0.0.1" }}
+
+    {{ NewKey "N2Privatekey" "btc" }}
+    {{ SetVar "N2Address" "n2:sa-v0.0.1" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -21,7 +27,7 @@ storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
         {{ SetVar "Self.Address" ( printf "%s:sa-v0.0.1" .Self.Alias ) }}
-        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?insecure=true&meaningless=query" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?insecure=true" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
         {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
 
@@ -39,7 +45,7 @@ node-config:
             url: {{ .Self.NetworkURL }}
 
         policy:
-            threshold: 67
+            threshold: 100
 
         genesis-operations:
             - type: genesis-currencies
@@ -56,27 +62,34 @@ node-config:
                       type: fixed
                       amount: 1
 
-        {{ if ne .Self.Alias "n2" }}
         suffrage:
             nodes:
                 - n0:sa-v0.0.1
                 - n1:sa-v0.0.1
-        {{ end }}
+                - n2:sa-v0.0.1
 
         _nodes-config:
-            address: {{ .Self.Address }}
-            publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
-            url: {{ .Self.NetworkURL }}
+            address: {{ if eq .Self.Alias "n3" }}{{ .N2Address }}{{ else }}{{ .Self.Address }}{{ end }}
+            publickey: {{ if eq .Self.Alias "n3" }}{{ with .N2Privatekey }}{{ .Publickey }}{{ end }}{{ else }}{{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}{{ end }}
 
     n0:
     n1:
-    n2:
+    n2: |
+        address: {{ .N2Address }}
+        privatekey: {{ .N2Privatekey }}
+        publickey: {{ with .N2Privatekey }}{{ .Publickey }}{{ end }}
+    n3: |
+        address: {{ .N2Address }}
+        privatekey: {{ .N2Privatekey }}
+        publickey: {{ with .N2Privatekey }}{{ .Publickey }}{{ end }}
 
 nodes-config: |
-    nodes:{{ range $node, $config := .NodesConfig }}
+    nodes:{{ range $node, $config := .NodesConfig }}{{ if ne $node "n3" }}{{ if and ( eq $.Alias "n3" ) ( eq $node "n2" ) }}{{ else }}{{ if eq $node "n2" }}
+        - address: {{ $.N2Address }}
+          publickey: {{ with $.N2Privatekey }}{{ .Publickey }}{{ end }}
+          {{ else }}
         - address: {{ index $config "address" }}
-          publickey: {{ index $config "publickey" }}
-          url: {{ index $config "url" }}{{ end }}
+          publickey: {{ index $config "publickey" }}{{ end }}{{ end }}{{ end }}{{ end }}
 
 sequences:
     - condition: >
@@ -109,10 +122,37 @@ sequences:
         {"node": "n0", "x.m": "joined network"}
     - condition: >
         {"node": "n1", "x.m": "joined network"}
+    - condition: >
+        {"node": "n2", "x.m": "joined network"}
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
+        {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
+        {"node": "n1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
     - condition: >
-        {"node": "n2", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
+        {"node": "n2", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+      action:
+          name: start-nodes
+          nodes:
+              - n3
+          args:
+              - "--discovery"
+              - "{{ .Design.Node.n0.Network.URL }}"
+              - "--discovery"
+              - "{{ .Design.Node.n1.Network.URL }}"
+ 
+    - condition: >
+        {"node": "n3", "x.m": "joined network"}
+ 
+    - condition: >
+        {"node": "n0", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
+    - condition: >
+        {"node": "n1", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
+    - condition: >
+        {"node": "n3", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
+
+    # NOTE n2 is still joined, but the others, n0, n1 updated the network
+    # info of "n2:sa-v0.0.1" by n3. Naturally n0, n1 will not broadcast it's
+    # ballot, so n2 can not do anyting.
+    - condition: >
+        {"node": "n2", "x.m": "new block stored", "x.block.height": {"$lt": 10}, "x.block.round": 0}
