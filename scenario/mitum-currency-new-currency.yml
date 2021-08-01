@@ -35,7 +35,7 @@ storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
         {{ SetVar "Self.Address" ( printf "%s:sa-v0.0.1" .Self.Alias ) }}
-        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?insecure=true" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
 
         address: {{ .Self.Address }}
@@ -124,11 +124,11 @@ sequences:
               - n2
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}"
+              - "{{ .Design.Node.n0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}"
+              - "{{ .Design.Node.n1.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n2.Network.URL }}"
+              - "{{ .Design.Node.n2.Network.URL }}#insecure"
 
     - condition: >
         {"node": "n0", "x.m": "joined network"}

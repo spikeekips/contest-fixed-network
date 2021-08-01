@@ -13,7 +13,7 @@ require (
 	github.com/oklog/ulid v1.3.1
 	github.com/rs/zerolog v1.23.0
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/spikeekips/mitum v0.0.0-20210729035847-5e79850b87c4
+	github.com/spikeekips/mitum v0.0.0-20210801044028-3a93338babe9
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.7.0
 	go.uber.org/automaxprocs v1.4.0

@@ -21,7 +21,7 @@ storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
         {{ SetVar "Self.Address" ( printf "%s:sa-v0.0.1" .Self.Alias ) }}
-        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?insecure=true&meaningless=query" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?meaningless=query" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
         {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
 
@@ -67,6 +67,7 @@ node-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
             url: {{ .Self.NetworkURL }}
+            tls-insecure: true
 
     n0:
     n1:
@@ -76,7 +77,8 @@ nodes-config: |
     nodes:{{ range $node, $config := .NodesConfig }}
         - address: {{ index $config "address" }}
           publickey: {{ index $config "publickey" }}
-          url: {{ index $config "url" }}{{ end }}
+          url: {{ index $config "url" }}
+          tls-insecure: {{ index $config "tls-insecure" }}{{ end }}
 
 sequences:
     - condition: >
@@ -99,11 +101,11 @@ sequences:
               - n2
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}"
+              - "{{ .Design.Node.n0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}"
+              - "{{ .Design.Node.n1.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n2.Network.URL }}"
+              - "{{ .Design.Node.n2.Network.URL }}#insecure"
 
     - condition: >
         {"node": "n0", "x.m": "joined network"}
