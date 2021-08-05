@@ -25,7 +25,7 @@ func LoadTestNameContextValue(ctx context.Context, l *string) error {
 	return util.LoadFromContextValue(ctx, ContextValueTestName, l)
 }
 
-func LoadLogContextValue(ctx context.Context, l *logging.Logger) error {
+func LoadLogContextValue(ctx context.Context, l **logging.Logging) error {
 	return util.LoadFromContextValue(ctx, ContextValueLog, l)
 }
 

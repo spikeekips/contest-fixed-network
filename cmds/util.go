@@ -176,7 +176,7 @@ end:
 }
 
 func newHost(ctx context.Context, de config.DesignHost, nodeDesigns map[string]string) (host.Host, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return nil, err
 	}
@@ -205,8 +205,8 @@ func newHost(ctx context.Context, de config.DesignHost, nodeDesigns map[string]s
 		h = host.NewLocalHost(de, vars, nodeDesigns, runnerFile, logDir)
 	}
 
-	if l, ok := h.(logging.SetLogger); ok {
-		_ = l.SetLogger(log)
+	if l, ok := h.(logging.SetLogging); ok {
+		_ = l.SetLogging(log)
 	}
 
 	return h, h.Connect()
@@ -235,7 +235,7 @@ func parseSequence(ctx context.Context, design config.DesignSequence) (*host.Seq
 }
 
 func parseSequenceAction(ctx context.Context, design config.DesignAction) (host.Action, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return nil, err
 	}
@@ -245,8 +245,8 @@ func parseSequenceAction(ctx context.Context, design config.DesignAction) (host.
 	} else if action, err := i(ctx, design); err != nil {
 		return nil, xerrors.Errorf("failed to load action, %q: %w", design.Name, err)
 	} else {
-		if l, ok := action.(logging.SetLogger); ok {
-			_ = l.SetLogger(log)
+		if l, ok := action.(logging.SetLogging); ok {
+			_ = l.SetLogging(log)
 		}
 
 		return action, nil
@@ -254,7 +254,7 @@ func parseSequenceAction(ctx context.Context, design config.DesignAction) (host.
 }
 
 func generateNodesConfig(ctx context.Context, design config.Design, hosts *host.Hosts) (map[string][]byte, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return nil, err
 	}
@@ -276,7 +276,7 @@ func generateNodesConfig(ctx context.Context, design config.Design, hosts *host.
 			}
 		}
 
-		log.Debug().Str("host", h.Host()).Interface("shared", sh).Msg("host prepared")
+		log.Log().Debug().Str("host", h.Host()).Interface("shared", sh).Msg("host prepared")
 
 		return true, nil
 	}); err != nil {

@@ -34,7 +34,7 @@ func init() {
 }
 
 func ProcessHosts(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -59,14 +59,12 @@ func ProcessHosts(ctx context.Context) (context.Context, error) {
 	designHosts, selected := spreadNodes(design.Hosts, nodes)
 
 	hosts := host.NewHosts(lo)
-	_ = hosts.SetLogger(log)
+	_ = hosts.SetLogging(log)
 
 	for i := range designHosts {
 		de := designHosts[i]
 
-		l := log.WithLogger(func(ctx logging.Context) logging.Emitter {
-			return ctx.Str("host", de.Host)
-		})
+		l := log.Log().With().Str("host", de.Host).Logger()
 
 		if len(selected[i]) < 1 {
 			l.Debug().Msg("no nodes; will be skipped")
@@ -88,7 +86,7 @@ func ProcessHosts(ctx context.Context) (context.Context, error) {
 		l.Debug().Strs("nodes", selected[i]).Interface("design", de).Msg("host created")
 	}
 
-	log.Debug().Int("hosts", hosts.LenHosts()).Msg("hosts created")
+	log.Log().Debug().Int("hosts", hosts.LenHosts()).Msg("hosts created")
 
 	return context.WithValue(ctx, host.ContextValueHosts, hosts), nil
 }
@@ -122,7 +120,7 @@ func spreadNodes(hosts []config.DesignHost, nodes []string) ([]config.DesignHost
 }
 
 func HookCleanStoppedNodeContainers(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -139,7 +137,7 @@ func HookCleanStoppedNodeContainers(ctx context.Context) (context.Context, error
 		return ctx, err
 	}
 
-	log.Debug().Bool("force", force).Msg("trying to clean up stopped node containers")
+	log.Log().Debug().Bool("force", force).Msg("trying to clean up stopped node containers")
 
 	if err := hosts.TraverseHosts(func(h host.Host) (bool, error) {
 		err := h.Clean(context.Background(), true, force)
@@ -161,7 +159,7 @@ func HookCleanStoppedNodeContainers(ctx context.Context) (context.Context, error
 }
 
 func HookCloseHosts(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -171,7 +169,7 @@ func HookCloseHosts(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	log.Debug().Msg("trying to close hosts")
+	log.Log().Debug().Msg("trying to close hosts")
 
 	return ctx, hosts.Close()
 }

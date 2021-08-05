@@ -27,7 +27,7 @@ func init() {
 }
 
 func ProcessLogSaver(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -64,7 +64,7 @@ func ProcessLogSaver(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	_ = lo.SetLogger(log)
+	_ = lo.SetLogging(log)
 
 	if err := lo.Start(); err != nil {
 		return ctx, err

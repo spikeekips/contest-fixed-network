@@ -30,7 +30,7 @@ func init() {
 }
 
 func ProcessLogWatcher(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -69,13 +69,13 @@ func ProcessLogWatcher(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	_ = lw.SetLogger(log)
+	_ = lw.SetLogging(log)
 
 	return context.WithValue(ctx, host.ContextValueLogWatcher, lw), lw.Start()
 }
 
 func HookStopLogHandlers(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -84,7 +84,7 @@ func HookStopLogHandlers(ctx context.Context) (context.Context, error) {
 	if err := host.LoadLogSaverContextValue(ctx, &ls); err != nil {
 		return ctx, err
 	} else if err := ls.Stop(); err != nil {
-		log.Error().Err(err).Msg("failed to stop log saver")
+		log.Log().Error().Err(err).Msg("failed to stop log saver")
 
 		return ctx, err
 	}
@@ -93,7 +93,7 @@ func HookStopLogHandlers(ctx context.Context) (context.Context, error) {
 	if err := host.LoadLogWatcherContextValue(ctx, &lw); err != nil {
 		return ctx, err
 	} else if err := lw.Stop(); err != nil {
-		log.Error().Err(err).Msg("failed to stop log watcher")
+		log.Log().Error().Err(err).Msg("failed to stop log watcher")
 
 		return ctx, nil
 	}

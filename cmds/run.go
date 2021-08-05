@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
 	mitumcmds "github.com/spikeekips/mitum/launch/cmds"
 	"github.com/spikeekips/mitum/launch/pm"
 	"github.com/spikeekips/mitum/util"
@@ -79,7 +80,7 @@ type RunCommand struct {
 
 func NewRunCommand() (RunCommand, error) {
 	cmd := RunCommand{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.Str("module", "command-run")
 		}),
 		LogFlags: &mitumcmds.LogFlags{},
@@ -97,7 +98,7 @@ func (cmd *RunCommand) Run(version util.Version) error {
 	if err != nil {
 		return err
 	}
-	_ = cmd.SetLogger(i)
+	_ = cmd.SetLogging(i)
 
 	if err := version.IsValid(nil); err != nil {
 		return err
@@ -184,7 +185,7 @@ func (cmd *RunCommand) close(ctx context.Context, exitError error) error {
 	ctx = context.WithValue(ctx, ContextValueExitError, exitError)
 
 	cmd.closeProcesses.SetContext(ctx)
-	_ = cmd.closeProcesses.SetLogger(cmd.Log())
+	_ = cmd.closeProcesses.SetLogging(cmd.Logging)
 
 	return cmd.closeProcesses.Run()
 }
@@ -192,7 +193,7 @@ func (cmd *RunCommand) close(ctx context.Context, exitError error) error {
 func (cmd *RunCommand) processRun(ctx context.Context) error {
 	cmd.prepareProcesses()
 
-	ctx = context.WithValue(ctx, config.ContextValueLog, cmd.Log())
+	ctx = context.WithValue(ctx, config.ContextValueLog, cmd.Logging)
 	ctx = context.WithValue(ctx, config.ContextValueFlags, map[string]interface{}{
 		"Design":     []byte(cmd.Design),
 		"LogDir":     cmd.ContestLogDir,
@@ -202,7 +203,7 @@ func (cmd *RunCommand) processRun(ctx context.Context) error {
 	})
 
 	cmd.runProcesses.SetContext(ctx)
-	_ = cmd.runProcesses.SetLogger(cmd.Log())
+	_ = cmd.runProcesses.SetLogging(cmd.Logging)
 
 	cmd.Log().Info().Msg("trying to run contest")
 

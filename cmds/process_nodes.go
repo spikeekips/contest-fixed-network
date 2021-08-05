@@ -29,7 +29,7 @@ func init() {
 }
 
 func ProcessNodes(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -54,7 +54,7 @@ func ProcessNodes(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	log.Debug().Msg("trying to prepare hosts")
+	log.Log().Debug().Msg("trying to prepare hosts")
 	nodesConfig, err := generateNodesConfig(ctx, design, hosts)
 	if err != nil {
 		return ctx, xerrors.Errorf("failed to generate nodes config: %w", err)
@@ -69,7 +69,7 @@ func ProcessNodes(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	log.Debug().Msg("hosts and nodes prepared")
+	log.Log().Debug().Msg("hosts and nodes prepared")
 
 	return context.WithValue(ctx, config.ContextValueVars, vars), nil
 }

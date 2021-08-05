@@ -32,7 +32,7 @@ func init() {
 }
 
 func ProcessMongodb(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -42,7 +42,7 @@ func ProcessMongodb(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	log.Debug().
+	log.Log().Debug().
 		Str("mongodb", design.Storage.String()).
 		Str("db", design.Storage.Database).
 		Msg("trying to connect mongodb")
@@ -56,14 +56,14 @@ func ProcessMongodb(ctx context.Context) (context.Context, error) {
 	} else if err := mg.Initialize(context.Background()); err != nil {
 		return ctx, xerrors.Errorf("failed to initialize mongodb: %w", err)
 	} else {
-		log.Debug().Msg("mongodb connected")
+		log.Log().Debug().Msg("mongodb connected")
 
 		return context.WithValue(ctx, host.ContextValueMongodb, mg), nil
 	}
 }
 
 func HookCloseMongodb(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -73,7 +73,7 @@ func HookCloseMongodb(ctx context.Context) (context.Context, error) {
 		return ctx, err
 	}
 
-	log.Debug().Msg("trying to close mongodb")
+	log.Log().Debug().Msg("trying to close mongodb")
 
 	closeCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -81,7 +81,7 @@ func HookCloseMongodb(ctx context.Context) (context.Context, error) {
 		return ctx, xerrors.Errorf("failed to close mongodb: %w", err)
 	}
 
-	log.Debug().Msg("mongodb closed")
+	log.Log().Debug().Msg("mongodb closed")
 
 	return ctx, nil
 }

@@ -27,7 +27,7 @@ func init() {
 }
 
 func ProcessConfig(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -51,7 +51,7 @@ func ProcessConfig(ctx context.Context) (context.Context, error) {
 		design = de
 	}
 
-	log.Info().Interface("design", design).Msg("design loaded")
+	log.Log().Info().Interface("design", design).Msg("design loaded")
 
 	return context.WithValue(ctx, config.ContextValueDesign, design), nil
 }

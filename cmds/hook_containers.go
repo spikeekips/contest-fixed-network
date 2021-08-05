@@ -12,7 +12,7 @@ import (
 const HookNameCleanContainers = "clean_containers"
 
 func HookCleanContainers(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -31,7 +31,7 @@ func HookCleanContainers(ctx context.Context) (context.Context, error) {
 		return ctx, nil
 	}
 
-	log.Debug().Msg("trying to clean containers")
+	log.Log().Debug().Msg("trying to clean containers")
 
 	cleanCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -39,11 +39,11 @@ func HookCleanContainers(ctx context.Context) (context.Context, error) {
 	if err := hosts.TraverseHosts(func(h host.Host) (bool, error) {
 		return true, h.Clean(cleanCtx, false, true)
 	}); err != nil {
-		log.Error().Err(err).Msg("failed to clean containers")
+		log.Log().Error().Err(err).Msg("failed to clean containers")
 
 		return ctx, err
 	}
-	log.Debug().Msg("containers cleaned")
+	log.Log().Debug().Msg("containers cleaned")
 
 	return ctx, nil
 }

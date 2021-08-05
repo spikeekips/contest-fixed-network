@@ -3,6 +3,7 @@ package host
 import (
 	"context"
 
+	"github.com/rs/zerolog"
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/mitum/util/logging"
 	"go.mongodb.org/mongo-driver/bson"
@@ -32,7 +33,7 @@ func NewCondition(ctx context.Context, q, storageURI, col string) (*Condition, e
 		col = colLogEntry
 	}
 
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return nil, err
 	}
@@ -57,7 +58,7 @@ func NewCondition(ctx context.Context, q, storageURI, col string) (*Condition, e
 	}
 
 	co := &Condition{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.
 				Str("module", "condition").
 				Str("query", q)
@@ -67,7 +68,7 @@ func NewCondition(ctx context.Context, q, storageURI, col string) (*Condition, e
 		col:           col,
 	}
 
-	_ = co.SetLogger(log)
+	_ = co.SetLogging(log)
 
 	return co, nil
 }

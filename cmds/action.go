@@ -110,7 +110,7 @@ type BaseNodesAction struct {
 }
 
 func NewBaseNodesAction(ctx context.Context, name string, aliases []string) (*BaseNodesAction, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func NewBaseNodesAction(ctx context.Context, name string, aliases []string) (*Ba
 	}
 
 	action := &BaseNodesAction{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.Str("module", fmt.Sprintf("%s-action", name)).Strs("nodes", aliases)
 		}),
 		name:  name,
@@ -139,7 +139,7 @@ func NewBaseNodesAction(ctx context.Context, name string, aliases []string) (*Ba
 		lo:    lo,
 	}
 
-	_ = action.SetLogger(log)
+	_ = action.SetLogging(log)
 
 	return action, nil
 }
@@ -566,7 +566,7 @@ func NewHostCommandAction(ctx context.Context, args []string) (host.Action, erro
 		return nil, xerrors.Errorf("empty command")
 	}
 
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return nil, err
 	}
@@ -596,7 +596,7 @@ func NewHostCommandAction(ctx context.Context, args []string) (host.Action, erro
 	}
 
 	action := &HostCommandAction{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.Str("module", "host-command-action").Str("command", args[0][:20])
 		}),
 		command: args[0],
@@ -604,7 +604,7 @@ func NewHostCommandAction(ctx context.Context, args []string) (host.Action, erro
 		local:   local,
 	}
 
-	_ = action.SetLogger(log)
+	_ = action.SetLogging(log)
 
 	return action, nil
 }

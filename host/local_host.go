@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/rs/zerolog"
 	"github.com/spikeekips/mitum/util/logging"
 	"golang.org/x/xerrors"
 
@@ -45,7 +46,7 @@ func NewLocalHost(
 	baseDir string,
 ) *LocalHost {
 	return &LocalHost{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.
 				Str("module", "host").
 				Str("host", design.Host)

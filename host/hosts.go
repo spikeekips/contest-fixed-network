@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/rs/zerolog"
 	"github.com/spikeekips/mitum/util/logging"
 	"golang.org/x/xerrors"
 )
@@ -17,7 +18,7 @@ type Hosts struct {
 
 func NewHosts(lo *LogSaver) *Hosts {
 	return &Hosts{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.Str("module", "hosts")
 		}),
 		lo:    lo,
@@ -118,9 +119,7 @@ func (hs *Hosts) Close() error {
 	return RunWaitGroup(len(hosts), func(i int) error {
 		h := hosts[i]
 
-		l := hs.Log().WithLogger(func(ctx logging.Context) logging.Emitter {
-			return ctx.Str("host", h.Host())
-		})
+		l := hs.Log().With().Str("host", h.Host()).Logger()
 		if err := h.Close(context.Background()); err != nil {
 			l.Error().Err(err).Msg("failed to close host")
 

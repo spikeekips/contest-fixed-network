@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/spikeekips/mitum/util"
 	"github.com/spikeekips/mitum/util/logging"
 	"golang.org/x/xerrors"
@@ -37,7 +38,7 @@ func NewLogSaver(
 	ctx, cancel := context.WithCancel(context.Background())
 
 	ls := &LogSaver{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.Str("module", "log-saver")
 		}),
 		mg:          mg,
@@ -102,6 +103,7 @@ func (ls *LogSaver) start(ctx context.Context) error {
 	updated := map[string]struct{}{}
 	var entries []LogEntry
 
+	var count int
 end:
 	for {
 		select {
@@ -110,7 +112,8 @@ end:
 
 			break end
 		case <-ticker.C:
-			if err := ls.saveEntries(entries, updated); err != nil {
+			count++
+			if err := ls.saveEntries(entries, updated, count); err != nil {
 				ls.Log().Error().Err(err).Msg("failed to save log entries")
 
 				continue
@@ -130,12 +133,14 @@ end:
 				continue
 			}
 
-			updated[name] = struct{}{}
+			if _, found := updated[name]; !found {
+				updated[name] = struct{}{}
+			}
 			entries = append(entries, entry)
 		}
 	}
 
-	return ls.saveEntries(entries, updated)
+	return ls.saveEntries(entries, updated, 1)
 }
 
 func (ls *LogSaver) saveToFile(entry LogEntry) (string, error) {
@@ -214,7 +219,7 @@ func (ls *LogSaver) isLogEntryStderr(entry LogEntry) bool {
 	}
 }
 
-func (ls *LogSaver) saveEntries(entries []LogEntry, updated map[string]struct{}) error {
+func (ls *LogSaver) saveEntries(entries []LogEntry, updated map[string]struct{}, count int) error {
 	if len(entries) < 1 {
 		return nil
 	}
@@ -224,7 +229,10 @@ func (ls *LogSaver) saveEntries(entries []LogEntry, updated map[string]struct{})
 
 		return err
 	}
-	ls.Log().Verbose().Int("entries", len(entries)).Msg("log entry inserted")
+
+	if count%10 == 0 {
+		ls.Log().Debug().Int("entries", len(entries)).Msg("log entry inserted")
+	}
 
 	if err := ls.syncs(updated); err != nil {
 		return err

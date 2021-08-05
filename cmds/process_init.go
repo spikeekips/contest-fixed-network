@@ -18,7 +18,7 @@ const (
 var defaultLogDir = filepath.Clean("./contest")
 
 func HookBase(ctx context.Context) (context.Context, error) {
-	var log logging.Logger
+	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return ctx, err
 	}
@@ -34,7 +34,7 @@ func HookBase(ctx context.Context) (context.Context, error) {
 	if len(logDir) < 1 {
 		logDir = defaultLogDir
 
-		log.Debug().Str("log_dir", defaultLogDir).Msg("log directory is empty, default directory will be used")
+		log.Log().Debug().Str("log_dir", defaultLogDir).Msg("log directory is empty, default directory will be used")
 	} else {
 		logDir = filepath.Clean(logDir)
 	}
@@ -49,10 +49,10 @@ func HookBase(ctx context.Context) (context.Context, error) {
 			return ctx, xerrors.Errorf("failed to create log directory, %q", testDir)
 		}
 
-		log.Debug().Str("test_dir", logDir).Msg("test log directory created")
+		log.Log().Debug().Str("test_dir", logDir).Msg("test log directory created")
 	}
 
-	log.Info().Str("test_dir", logDir).Str("test_name", testName).Msg("base prepared")
+	log.Log().Info().Str("test_dir", logDir).Str("test_name", testName).Msg("base prepared")
 
 	ctx = context.WithValue(ctx, config.ContextValueTestName, testName)
 	ctx = context.WithValue(ctx, config.ContextValueLogDir, testDir)

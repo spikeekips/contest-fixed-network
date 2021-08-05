@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/mitum/util"
 	"github.com/spikeekips/mitum/util/logging"
@@ -30,7 +31,7 @@ func NewLogWatcher(mg *Mongodb, sqs []*Sequence, exitChan chan error, vars *conf
 	}
 
 	lw := &LogWatcher{
-		Logging: logging.NewLogging(func(c logging.Context) logging.Emitter {
+		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
 			return c.Str("module", "log-watcher")
 		}),
 		mg:          mg,
@@ -121,9 +122,7 @@ func (lw *LogWatcher) evaluate(sq *Sequence) (bool, error) {
 	lw.Lock()
 	defer lw.Unlock()
 
-	l := lw.Log().WithLogger(func(ctx logging.Context) logging.Emitter {
-		return ctx.Interface("condition", sq.Condition().QueryString())
-	})
+	l := lw.Log().With().Interface("condition", sq.Condition().QueryString()).Logger()
 
 	var record interface{}
 	switch i, matched, err := sq.Condition().Check(lw.vars, lw.getStorage); {
@@ -174,9 +173,7 @@ func (lw *LogWatcher) getStorage(uri string) (*Mongodb, error) {
 		return i, nil
 	}
 
-	l := lw.Log().WithLogger(func(ctx logging.Context) logging.Emitter {
-		return ctx.Str("uri", uri)
-	})
+	l := lw.Log().With().Str("uri", uri).Logger()
 
 	timeout := time.Second * 3
 	l.Debug().Dur("timeout", timeout).Msg("connecting storage")
