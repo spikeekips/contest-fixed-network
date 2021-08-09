@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
 )
 
 func CompileTemplate(s string, vars *Vars) ([]byte, error) {
@@ -25,7 +25,7 @@ func CompileTemplate(s string, vars *Vars) ([]byte, error) {
 	for sc.Scan() {
 		l := sc.Text()
 		if strings.Contains(l, "<no value>") {
-			return nil, xerrors.Errorf("some variables are not replaced in template string, %q(line: %d)", l, ln)
+			return nil, errors.Errorf("some variables are not replaced in template string, %q(line: %d)", l, ln)
 		}
 		ln++
 	}

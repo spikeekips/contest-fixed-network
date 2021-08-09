@@ -3,8 +3,8 @@ package cmds
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/spikeekips/mitum/util"
-	"golang.org/x/xerrors"
 )
 
 var (
@@ -18,7 +18,7 @@ func LoadExitErrorContextValue(ctx context.Context, l *error) error {
 		return nil
 	}
 
-	if xerrors.Is(err, util.ContextValueNotFoundError) {
+	if errors.Is(err, util.ContextValueNotFoundError) {
 		return nil
 	}
 

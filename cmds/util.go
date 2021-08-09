@@ -10,10 +10,10 @@ import (
 	"text/template"
 
 	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/pkg/errors"
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/contest/host"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 )
 
 func filterNodes(hosts *host.Hosts, aliases []string) ([]*host.Node, error) {
@@ -34,7 +34,7 @@ func filterNodes(hosts *host.Hosts, aliases []string) ([]*host.Node, error) {
 		for _, alias := range aliases {
 			_, found := founds[alias]
 			if found {
-				return nil, xerrors.Errorf("duplicated node, %q found", alias)
+				return nil, errors.Errorf("duplicated node, %q found", alias)
 			}
 			founds[alias] = struct{}{}
 		}
@@ -56,7 +56,7 @@ func filterNodes(hosts *host.Hosts, aliases []string) ([]*host.Node, error) {
 		}
 
 		if !found {
-			return nil, xerrors.Errorf("node, %q not found", alias)
+			return nil, errors.Errorf("node, %q not found", alias)
 		}
 	}
 
@@ -241,9 +241,9 @@ func parseSequenceAction(ctx context.Context, design config.DesignAction) (host.
 	}
 
 	if i, found := ActionLoaders[design.Name]; !found {
-		return nil, xerrors.Errorf("unknown action, %q found", design.Name)
+		return nil, errors.Errorf("unknown action, %q found", design.Name)
 	} else if action, err := i(ctx, design); err != nil {
-		return nil, xerrors.Errorf("failed to load action, %q: %w", design.Name, err)
+		return nil, errors.Wrapf(err, "failed to load action, %q", design.Name)
 	} else {
 		if l, ok := action.(logging.SetLogging); ok {
 			_ = l.SetLogging(log)

@@ -1,9 +1,9 @@
 package config
 
 import (
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
-	"golang.org/x/xerrors"
 )
 
 type DesignSequence struct {
@@ -40,7 +40,7 @@ func (de *DesignAction) IsValid([]byte) error {
 			return nil
 		}
 
-		return xerrors.Errorf("empty action name")
+		return errors.Errorf("empty action name")
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func CheckMongodbURI(uri string) (connstring.ConnString, error) {
 	}
 
 	if len(cs.Database) < 1 {
-		return connstring.ConnString{}, xerrors.Errorf("empty database name in mongodb uri: '%v'", uri)
+		return connstring.ConnString{}, errors.Errorf("empty database name in mongodb uri: '%v'", uri)
 	}
 
 	return cs, nil
@@ -67,7 +67,7 @@ const (
 
 func (t DesignRegisterType) IsValid([]byte) error {
 	if t != RegisterLastMatchType {
-		return xerrors.Errorf("unknown register type, %q", t)
+		return errors.Errorf("unknown register type, %q", t)
 	}
 
 	return nil
@@ -91,7 +91,7 @@ func (de *DesignRegister) IsValid([]byte) error {
 	}
 
 	if len(de.Type) < 1 || len(de.To) < 1 {
-		return xerrors.Errorf("type and to empty")
+		return errors.Errorf("type and to empty")
 	}
 
 	return de.Type.IsValid(nil)
@@ -103,7 +103,7 @@ func IsTemplateCondition(s string) bool {
 
 func ParseConditionQuery(s string) (bson.M, error) {
 	if len(s) < 1 {
-		return nil, xerrors.Errorf("empty condition query")
+		return nil, errors.Errorf("empty condition query")
 	}
 
 	var q bson.M
@@ -114,7 +114,7 @@ func ParseConditionQuery(s string) (bson.M, error) {
 	}
 
 	if err := bson.UnmarshalExtJSON(b, false, &q); err != nil {
-		return nil, xerrors.Errorf("bad condition query string: %w", err)
+		return nil, errors.Wrap(err, "bad condition query string")
 	}
 
 	return q, nil
@@ -128,7 +128,7 @@ type DesignCondition struct {
 
 func (de *DesignCondition) IsValid([]byte) error {
 	if len(de.Query) < 1 {
-		return xerrors.Errorf("empty condition query")
+		return errors.Errorf("empty condition query")
 	} else if _, err := ParseConditionQuery(de.Query); err != nil {
 		return err
 	}

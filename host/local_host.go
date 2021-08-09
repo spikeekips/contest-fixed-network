@@ -16,9 +16,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 
 	"github.com/spikeekips/contest/config"
 )
@@ -117,7 +117,7 @@ func (ho *LocalHost) Clean(ctx context.Context, dryrun, force bool) error {
 	if err := TraverseContainers(ho.client, func(c dockerTypes.Container) (bool, error) {
 		if !force {
 			if c.State == "running" {
-				return false, xerrors.Errorf("founds still running node container, %q", c.ID)
+				return false, errors.Errorf("founds still running node container, %q", c.ID)
 			}
 		}
 
@@ -142,7 +142,7 @@ func (ho *LocalHost) Clean(ctx context.Context, dryrun, force bool) error {
 
 func (ho *LocalHost) Prepare(common string, vars *config.Vars) (map[string]interface{}, error) {
 	if vars == nil {
-		return nil, xerrors.Errorf("empty vars")
+		return nil, errors.Errorf("empty vars")
 	}
 
 	if err := PullImages(ho.client, []string{DefaultMongodbImage, DefaultNodeImage}, false); err != nil {
@@ -152,7 +152,7 @@ func (ho *LocalHost) Prepare(common string, vars *config.Vars) (map[string]inter
 	}
 
 	if _, err := os.Stat(filepath.Join(ho.baseDir, "runner")); os.IsNotExist(err) {
-		return nil, xerrors.Errorf("runner does not exist, setRunner()")
+		return nil, errors.Errorf("runner does not exist, setRunner()")
 	}
 
 	if len(ho.nodeDesigns) < 1 {
@@ -287,9 +287,9 @@ func (ho *LocalHost) setRunner(f string) error {
 	var source, dest *os.File
 	var sourceStat os.FileInfo
 	if s, err := os.Open(filepath.Clean(f)); err != nil {
-		return xerrors.Errorf("failed to read runner file: %w", err)
+		return errors.Wrap(err, "failed to read runner file")
 	} else if fi, err := s.Stat(); err != nil {
-		return xerrors.Errorf("failed to read runner file: %w", err)
+		return errors.Wrap(err, "failed to read runner file")
 	} else {
 		source = s
 		sourceStat = fi
@@ -303,7 +303,7 @@ func (ho *LocalHost) setRunner(f string) error {
 		os.O_RDWR|os.O_CREATE, sourceStat.Mode(),
 	)
 	if err != nil {
-		return xerrors.Errorf("failed to create new runner file: %w", err)
+		return errors.Wrap(err, "failed to create new runner file")
 	}
 	defer func() {
 		_ = dest.Close()
@@ -312,15 +312,15 @@ func (ho *LocalHost) setRunner(f string) error {
 	buf := make([]byte, 1000000)
 	for {
 		n, err := source.Read(buf)
-		if err != nil && !xerrors.Is(err, io.EOF) {
-			return xerrors.Errorf("failed to copy runner: %w", err)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return errors.Wrap(err, "failed to copy runner")
 		}
 		if n == 0 {
 			break
 		}
 
 		if _, err := dest.Write(buf[:n]); err != nil {
-			return xerrors.Errorf("failed to copy runner: %w", err)
+			return errors.Wrap(err, "failed to copy runner")
 		}
 	}
 
@@ -356,7 +356,7 @@ func (ho *LocalHost) createMongodb() error {
 		MongodbContainerName(),
 	)
 	if err != nil {
-		return xerrors.Errorf("failed to create mongodb container: %w", err)
+		return errors.Wrap(err, "failed to create mongodb container")
 	}
 	ho.mongodbContainerID = r.ID
 
@@ -365,7 +365,7 @@ func (ho *LocalHost) createMongodb() error {
 
 func (ho *LocalHost) startMongodb() error {
 	if len(ho.mongodbContainerID) < 1 {
-		return xerrors.Errorf("create mongodb container first")
+		return errors.Errorf("create mongodb container first")
 	}
 
 	return ho.client.ContainerStart(

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/spikeekips/mitum/base/key"
-	"golang.org/x/xerrors"
 )
 
 var (
@@ -197,7 +197,7 @@ func getVar(v interface{}, keys string) (interface{}, bool) {
 
 func setVar(m map[string]interface{}, keys string, v interface{}) error {
 	if m == nil {
-		return xerrors.Errorf("nil map")
+		return errors.Errorf("nil map")
 	}
 
 	ks := strings.Split(keys, ".")

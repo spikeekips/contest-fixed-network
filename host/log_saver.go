@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spikeekips/mitum/util"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 )
 
 var ContestLogName = "contest"
@@ -154,7 +154,7 @@ func (ls *LogSaver) saveToFile(entry LogEntry) (string, error) {
 	var w io.Writer
 	switch n, found := ls.logFiles[name]; {
 	case !found:
-		return "", xerrors.Errorf("log file for %q not found", name)
+		return "", errors.Errorf("log file for %q not found", name)
 	case entry.IsError():
 		w = n[1]
 	default:
@@ -162,7 +162,7 @@ func (ls *LogSaver) saveToFile(entry LogEntry) (string, error) {
 	}
 
 	if err := entry.Write(w); err != nil {
-		return "", xerrors.Errorf("failed to write log file, %q(IsError=%v): %w", name, entry.IsError(), err)
+		return "", errors.Wrapf(err, "failed to write log file, %q(IsError=%v)", name, entry.IsError())
 	}
 
 	return name, nil
@@ -174,7 +174,7 @@ func (*LogSaver) createLogFile(logDir, name string) (io.WriteCloser, error) {
 		os.O_RDWR|os.O_CREATE, 0o600,
 	)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to create log file, %q: %w", name, err)
+		return nil, errors.Wrapf(err, "failed to create log file, %q", name)
 	}
 
 	return i, nil

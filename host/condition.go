@@ -3,11 +3,11 @@ package host
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/mitum/util/logging"
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/xerrors"
 )
 
 type Condition struct {
@@ -54,7 +54,7 @@ func NewCondition(ctx context.Context, q, storageURI, col string) (*Condition, e
 	}); err != nil {
 		return nil, err
 	} else if local == nil {
-		return nil, xerrors.Errorf("local host not found for HostCommandAction")
+		return nil, errors.Errorf("local host not found for HostCommandAction")
 	}
 
 	co := &Condition{
@@ -85,19 +85,19 @@ func (co *Condition) Query(vars *config.Vars) (bson.M, error) {
 	if !config.IsTemplateCondition(co.queryString) {
 		i, err := config.ParseConditionQuery(co.queryString)
 		if err != nil {
-			return nil, xerrors.Errorf("invalid compiled condition query string, %q: %w", co.queryString, err)
+			return nil, errors.Wrapf(err, "invalid compiled condition query string, %q", co.queryString)
 		}
 		co.query = i
 	}
 
 	b, err := config.CompileTemplate(co.queryString, vars)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to compile condition query, %q: %w", co.queryString, err)
+		return nil, errors.Wrapf(err, "failed to compile condition query, %q", co.queryString)
 	}
 
 	i, err := config.ParseConditionQuery(string(b))
 	if err != nil {
-		return nil, xerrors.Errorf("invalid compiled condition query string, %q: %w", co.queryString, err)
+		return nil, errors.Wrapf(err, "invalid compiled condition query string, %q", co.queryString)
 	}
 	co.query = i
 
@@ -112,7 +112,7 @@ func (co *Condition) Check(vars *config.Vars, getStorage func(string) (*Mongodb,
 		if config.IsTemplateCondition(uri) {
 			i, err := config.CompileTemplate(uri, vars)
 			if err != nil {
-				return nil, false, xerrors.Errorf("failed to compile storage uri: %w", err)
+				return nil, false, errors.Wrap(err, "failed to compile storage uri")
 			}
 			uri = string(i)
 		}

@@ -4,13 +4,13 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spikeekips/contest/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
-	"golang.org/x/xerrors"
 )
 
 var colLogEntry = "log"
@@ -76,7 +76,7 @@ func (mg *Mongodb) Initialize(context.Context) error {
 
 func (mg *Mongodb) AddLogEntries(ctx context.Context, entries []LogEntry) error {
 	if mg.client == nil || mg.db == nil {
-		return xerrors.Errorf("not yet connected")
+		return errors.Errorf("not yet connected")
 	}
 
 	models := make([]mongo.WriteModel, len(entries))
@@ -98,7 +98,7 @@ func (mg *Mongodb) Find(ctx context.Context, col string, query bson.M) (map[stri
 
 	var record map[string]interface{}
 	if r := mg.db.Collection(col).FindOne(ctx, query, option); r.Err() != nil {
-		if xerrors.Is(r.Err(), mongo.ErrNoDocuments) {
+		if errors.Is(r.Err(), mongo.ErrNoDocuments) {
 			return nil, false, nil
 		}
 

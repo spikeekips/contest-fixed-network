@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
 
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -43,7 +43,7 @@ var initNodesActionFunc = func(ctx context.Context, design config.DesignAction) 
 	case err != nil:
 		return nil, err
 	case len(i) < 1:
-		return nil, xerrors.Errorf("empty nodes")
+		return nil, errors.Errorf("empty nodes")
 	default:
 		nodes = i
 	}
@@ -67,7 +67,7 @@ var startNodesActionFunc = func(ctx context.Context, design config.DesignAction)
 	case err != nil:
 		return nil, err
 	case len(i) < 1:
-		return nil, xerrors.Errorf("empty nodes")
+		return nil, errors.Errorf("empty nodes")
 	default:
 		nodes = i
 	}
@@ -86,7 +86,7 @@ var stopNodesActionFunc = func(ctx context.Context, design config.DesignAction) 
 	case err != nil:
 		return nil, err
 	case len(i) < 1:
-		return nil, xerrors.Errorf("empty nodes")
+		return nil, errors.Errorf("empty nodes")
 	default:
 		nodes = i
 	}
@@ -181,7 +181,7 @@ func (ac *BaseNodesAction) createContainer(
 		name,
 	)
 	if err != nil {
-		return "", xerrors.Errorf("failed to create container: %w", err)
+		return "", errors.Wrap(err, "failed to create container")
 	}
 	return r.ID, nil
 }
@@ -234,9 +234,9 @@ func (*BaseNodesAction) waitContainer(
 		var err error
 		switch {
 		case status.Error != nil:
-			err = xerrors.Errorf("exited: %q", status.Error.Message)
+			err = errors.Errorf("exited: %q", status.Error.Message)
 		case status.StatusCode != 0:
-			err = xerrors.Errorf("abnormally exited with status code, %v", status.StatusCode)
+			err = errors.Errorf("abnormally exited with status code, %v", status.StatusCode)
 		}
 
 		return host.NodeExistedMsg{StatusCode: status.StatusCode, Err: err}, nil
@@ -267,7 +267,7 @@ func (*BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, erro
 	dataDir := filepath.Join(node.Host().BaseDir(), node.Alias())
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dataDir, 0o700); err != nil {
-			return nil, xerrors.Errorf("failed to create data directory, %q", dataDir)
+			return nil, errors.Errorf("failed to create data directory, %q", dataDir)
 		}
 	}
 
@@ -414,7 +414,7 @@ func (ac StartNodesAction) compileArgs() ([]string, error) {
 func (ac StartNodesAction) compileArg(s string) (string, error) {
 	b, err := config.CompileTemplate(s, ac.vars)
 	if err != nil {
-		return "", xerrors.Errorf("failed to compile arg, %q: %w", s, err)
+		return "", errors.Wrapf(err, "failed to compile arg, %q", s)
 	}
 
 	return string(b), nil
@@ -563,7 +563,7 @@ type HostCommandAction struct {
 
 func NewHostCommandAction(ctx context.Context, args []string) (host.Action, error) {
 	if len(args) < 1 {
-		return nil, xerrors.Errorf("empty command")
+		return nil, errors.Errorf("empty command")
 	}
 
 	var log *logging.Logging
@@ -587,7 +587,7 @@ func NewHostCommandAction(ctx context.Context, args []string) (host.Action, erro
 	}); err != nil {
 		return nil, err
 	} else if local == nil {
-		return nil, xerrors.Errorf("local host not found for HostCommandAction")
+		return nil, errors.Errorf("local host not found for HostCommandAction")
 	}
 
 	var vars *config.Vars
@@ -650,13 +650,13 @@ func (ac *HostCommandAction) Run(ctx context.Context) error {
 		l := ac.Log().Error().Err(err).Str("stderr", string(stderrOut))
 
 		var exitError *exec.ExitError
-		if xerrors.As(err, &exitError) {
+		if errors.As(err, &exitError) {
 			l = l.Int("exit_code", exitError.ExitCode())
 		}
 
 		l.Msg("failed to run command")
 
-		return xerrors.Errorf("failed to run command, %q: %w", string(stderrOut), err)
+		return errors.Wrapf(err, "failed to run command, %q", string(stderrOut))
 	}
 
 	ac.Log().Debug().Msg("command finished")
@@ -676,14 +676,14 @@ func findNodesFromDesign(design config.DesignAction) ([]string, error) {
 
 	j, ok := i.([]interface{})
 	if !ok {
-		return nil, xerrors.Errorf("nodes is not slice type, %T", i)
+		return nil, errors.Errorf("nodes is not slice type, %T", i)
 	}
 
 	nodes := make([]string, len(j))
 	for k := range j {
 		m, ok := j[k].(string)
 		if !ok {
-			return nil, xerrors.Errorf("node is not string type, %T", j[k])
+			return nil, errors.Errorf("node is not string type, %T", j[k])
 		}
 		nodes[k] = m
 	}

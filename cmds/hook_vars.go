@@ -6,8 +6,8 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/spikeekips/contest/config"
-	"golang.org/x/xerrors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -38,14 +38,14 @@ func HookVars(ctx context.Context) (context.Context, error) {
 	if i, found := m["vars"]; found {
 		varsString, ok := i.(string)
 		if !ok {
-			return ctx, xerrors.Errorf("vars not string, %T", i)
+			return ctx, errors.Errorf("vars not string, %T", i)
 		}
 
 		var bf bytes.Buffer
 		if t, err := template.New("design-vars").Funcs(vars.FuncMap()).Parse(varsString); err != nil {
-			return ctx, xerrors.Errorf("failed to compile vars string: %w", err)
+			return ctx, errors.Wrap(err, "failed to compile vars string")
 		} else if err := t.Execute(&bf, vars.Map()); err != nil {
-			return ctx, xerrors.Errorf("failed to compile vars string: %w", err)
+			return ctx, errors.Wrap(err, "failed to compile vars string")
 		}
 	}
 

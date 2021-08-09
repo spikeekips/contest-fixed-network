@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 )
 
 type Hosts struct {
@@ -88,7 +88,7 @@ func (hs *Hosts) AddHost(h Host) error {
 	defer hs.Unlock()
 
 	if _, found := hs.hosts[h.Host()]; found {
-		return xerrors.Errorf("host, %q already added", h.Host())
+		return errors.Errorf("host, %q already added", h.Host())
 	}
 
 	hs.hosts[h.Host()] = h

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/spikeekips/mitum/launch/pm"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/contest/host"
@@ -52,9 +52,9 @@ func ProcessMongodb(ctx context.Context) (context.Context, error) {
 
 	mg := host.NewMongodb(design.Storage)
 	if err := mg.Connect(connCtx); err != nil {
-		return ctx, xerrors.Errorf("failed to connect mongodb: %w", err)
+		return ctx, errors.Wrap(err, "failed to connect mongodb")
 	} else if err := mg.Initialize(context.Background()); err != nil {
-		return ctx, xerrors.Errorf("failed to initialize mongodb: %w", err)
+		return ctx, errors.Wrap(err, "failed to initialize mongodb")
 	} else {
 		log.Log().Debug().Msg("mongodb connected")
 
@@ -78,7 +78,7 @@ func HookCloseMongodb(ctx context.Context) (context.Context, error) {
 	closeCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	if err := mg.Close(closeCtx); err != nil {
-		return ctx, xerrors.Errorf("failed to close mongodb: %w", err)
+		return ctx, errors.Wrap(err, "failed to close mongodb")
 	}
 
 	log.Log().Debug().Msg("mongodb closed")

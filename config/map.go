@@ -3,7 +3,7 @@ package config
 import (
 	"reflect"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
 )
 
 func MergeItem(a, b interface{}) (map[string]interface{}, error) {
@@ -11,7 +11,7 @@ func MergeItem(a, b interface{}) (map[string]interface{}, error) {
 
 	i, ok := m.(map[string]interface{})
 	if !ok {
-		return nil, xerrors.Errorf("merged node config is not type of map[string]interface{}, %T", m)
+		return nil, errors.Errorf("merged node config is not type of map[string]interface{}, %T", m)
 	}
 	return i, nil
 }

@@ -7,7 +7,7 @@ import (
 	"net"
 	"sync"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -25,7 +25,7 @@ func AvailablePort(network string, exclude []string) (string, error) {
 	case "udp":
 		return availableUDPPortWithExcludes(exclude)
 	default:
-		return "", xerrors.Errorf("unknown network, %q", network)
+		return "", errors.Errorf("unknown network, %q", network)
 	}
 }
 

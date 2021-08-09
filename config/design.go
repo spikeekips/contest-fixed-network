@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
-	"golang.org/x/xerrors"
 )
 
 var (
@@ -112,7 +112,7 @@ func (de *DesignHost) IsValid([]byte) error {
 	}
 
 	if len(de.Host) < 1 {
-		return xerrors.Errorf("host is missing")
+		return errors.Errorf("host is missing")
 	}
 
 	return nil
@@ -126,7 +126,7 @@ type DesignHostSSH struct {
 
 func (de *DesignHostSSH) IsValid([]byte) error {
 	if len(de.Host) < 1 {
-		return xerrors.Errorf("empty host for remote")
+		return errors.Errorf("empty host for remote")
 	} else if strings.Contains(de.Host, ":") {
 		if _, _, err := net.SplitHostPort(de.Host); err != nil {
 			return err
@@ -134,7 +134,7 @@ func (de *DesignHostSSH) IsValid([]byte) error {
 	}
 
 	if len(de.User) < 1 {
-		return xerrors.Errorf("empty user for remote")
+		return errors.Errorf("empty user for remote")
 	}
 
 	return nil

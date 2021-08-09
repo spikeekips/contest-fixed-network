@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 
 	"github.com/spikeekips/contest/config"
 )
@@ -46,7 +46,7 @@ func HookBase(ctx context.Context) (context.Context, error) {
 
 	if _, err := os.Stat(testDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(testDir, 0o700); err != nil {
-			return ctx, xerrors.Errorf("failed to create log directory, %q", testDir)
+			return ctx, errors.Errorf("failed to create log directory, %q", testDir)
 		}
 
 		log.Log().Debug().Str("test_dir", logDir).Msg("test log directory created")

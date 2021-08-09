@@ -3,7 +3,7 @@ package config
 import (
 	"strings"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
 )
 
 type DesignYAML struct {
@@ -90,7 +90,7 @@ func (de DesignYAML) mergeNodeConfigs() (map[string]string, string, error) {
 		if v := de.NodeConfig[k]; v != nil {
 			s, ok := v.(string)
 			if !ok {
-				return nil, "", xerrors.Errorf("node config should be string, not %T", v)
+				return nil, "", errors.Errorf("node config should be string, not %T", v)
 			}
 			nodeConfig[k] = s
 		} else {

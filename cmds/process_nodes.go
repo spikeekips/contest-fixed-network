@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/spikeekips/mitum/launch/pm"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/contest/host"
@@ -57,7 +57,7 @@ func ProcessNodes(ctx context.Context) (context.Context, error) {
 	log.Log().Debug().Msg("trying to prepare hosts")
 	nodesConfig, err := generateNodesConfig(ctx, design, hosts)
 	if err != nil {
-		return ctx, xerrors.Errorf("failed to generate nodes config: %w", err)
+		return ctx, errors.Wrap(err, "failed to generate nodes config")
 	}
 
 	if err := hosts.TraverseNodes(func(node *host.Node) (bool, error) {

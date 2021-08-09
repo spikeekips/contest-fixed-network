@@ -3,7 +3,7 @@ package config
 import (
 	"strings"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -57,7 +57,7 @@ func (de DesignActionYAML) Merge() (DesignAction, error) {
 			return DesignAction{}, nil
 		}
 
-		return DesignAction{}, xerrors.Errorf("empty action name")
+		return DesignAction{}, errors.Errorf("empty action name")
 	}
 
 	var args []string
@@ -82,7 +82,7 @@ func (de DesignRegisterYAML) Merge() (DesignRegister, error) {
 	if de.Type != nil {
 		s := strings.TrimSpace(*de.Type)
 		if len(s) < 1 {
-			return design, xerrors.Errorf("empty type")
+			return design, errors.Errorf("empty type")
 		}
 		design.Type = DesignRegisterType(s)
 	}
@@ -90,7 +90,7 @@ func (de DesignRegisterYAML) Merge() (DesignRegister, error) {
 	if de.To != nil {
 		s := strings.TrimSpace(*de.To)
 		if len(s) < 1 {
-			return design, xerrors.Errorf("empty to")
+			return design, errors.Errorf("empty to")
 		}
 		design.To = s
 	}
@@ -132,13 +132,13 @@ func parseCondition(v interface{}) (DesignConditionYAML, error) {
 		return design, nil
 	case map[string]interface{}:
 		if b, err := yaml.Marshal(t); err != nil {
-			return design, xerrors.Errorf("invalid yaml for condition: %w", err)
+			return design, errors.Wrap(err, "invalid yaml for condition")
 		} else if err := yaml.Unmarshal(b, &design); err != nil {
-			return design, xerrors.Errorf("invalid DesignConditionYAML: %w", err)
+			return design, errors.Wrap(err, "invalid DesignConditionYAML")
 		} else {
 			return design, nil
 		}
 	default:
-		return design, xerrors.Errorf("wrong type for DesignCondition, %T", v)
+		return design, errors.Errorf("wrong type for DesignCondition, %T", v)
 	}
 }

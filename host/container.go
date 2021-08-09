@@ -13,8 +13,8 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	dockerClient "github.com/docker/docker/client"
-	"github.com/spikeekips/mitum/util/errors"
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
+	"github.com/spikeekips/mitum/util"
 )
 
 var (
@@ -30,7 +30,7 @@ var (
 	DefaultMongodbImage = "mongo"
 )
 
-var ContainerLogIgnoreError = errors.NewError("failed to read container logs; ignored")
+var ContainerLogIgnoreError = util.NewError("failed to read container logs; ignored")
 
 func MongodbContainerName() string {
 	return "contest-mongodb"
@@ -136,15 +136,15 @@ func ReadContainerLogs(
 
 		if t, err := readContainerLogs(ctx, reader, callback); err != nil {
 			switch {
-			case xerrors.Is(err, context.Canceled), xerrors.Is(err, context.DeadlineExceeded):
+			case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 				return nil
-			case xerrors.Is(err, ContainerLogIgnoreError):
+			case errors.Is(err, ContainerLogIgnoreError):
 				<-time.After(time.Millisecond * 600)
 
 				timestamp = t
 
 				continue
-			case xerrors.Is(err, io.EOF):
+			case errors.Is(err, io.EOF):
 				return nil
 			default:
 				timestamp = t
@@ -176,7 +176,7 @@ func readContainerLogs(ctx context.Context, reader io.Reader, callback func(uint
 					return timestamp, ContainerLogIgnoreError.Errorf("%s: %w", l, err)
 				}
 
-				return timestamp, xerrors.Errorf("failed to read logs body, %q: %w", string(l), err)
+				return timestamp, errors.Wrapf(err, "failed to read logs body, %q", string(l))
 			}
 
 			s := strings.SplitN(string(l[:len(l)-1]), " ", 2)

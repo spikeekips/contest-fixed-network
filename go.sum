@@ -1000,8 +1000,8 @@ github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnIn
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/spf13/viper v0.0.0-20150621231900-db7ff930a189/go.mod h1:A8kyI5cUJhb8N+3pkfONlcEcZbueH6nhAm0Fq7SrnBM=
 github.com/spf13/viper v1.4.0/go.mod h1:PTJ7Z/lr49W6bUbkmS1V3by4uWynFiR9p7+dSq/yZzE=
-github.com/spikeekips/mitum v0.0.0-20210805041447-076d8cfa3e2f h1:I/h9pHNEBlMyH1nfwdR6rDXDaZg9CxB0SF/3YZtvug8=
-github.com/spikeekips/mitum v0.0.0-20210805041447-076d8cfa3e2f/go.mod h1:87RXSAHENBlZDDPt6n2+tPaH2f827k63qRkmfhiSjTU=
+github.com/spikeekips/mitum v0.0.0-20210809154541-63c9ef2326dc h1:6codI3ocJsdMg1avTJn5KjEp66lZ5m9mB+yHhWlVQfs=
+github.com/spikeekips/mitum v0.0.0-20210809154541-63c9ef2326dc/go.mod h1:gWXQF2sI/pTxOjKwdrzWcOPOKvr3MvURB/KvVR1DbDI=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/stefanberger/go-pkcs11uri v0.0.0-20201008174630-78d3cae3a980/go.mod h1:AO3tvPzVZ/ayst6UlUKUv6rcPQInYe3IknH3jYhAKu8=
 github.com/stellar/go v0.0.0-20210727181749-61bc28bf313b h1:3nWSjHuQOJIGs1XyTT7rGPe754j1I+xzUqooIw8RynE=

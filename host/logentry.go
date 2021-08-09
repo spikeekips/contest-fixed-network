@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/xerrors"
 )
 
 type LogEntry interface {
@@ -26,7 +26,7 @@ type NodeLogEntry struct {
 
 func NewNodeLogEntry(node string, msg []byte, isError bool) (NodeLogEntry, error) {
 	if len(node) < 1 {
-		return NodeLogEntry{}, xerrors.Errorf("empty node string")
+		return NodeLogEntry{}, errors.Errorf("empty node string")
 	}
 
 	var isJSON bool

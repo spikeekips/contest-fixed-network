@@ -8,13 +8,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	mitumcmds "github.com/spikeekips/mitum/launch/cmds"
 	"github.com/spikeekips/mitum/launch/pm"
 	"github.com/spikeekips/mitum/util"
 	"github.com/spikeekips/mitum/util/logging"
 	"go.uber.org/automaxprocs/maxprocs"
-	"golang.org/x/xerrors"
 
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/contest/host"
@@ -153,19 +153,19 @@ func (cmd *RunCommand) run() error {
 			return nil
 		}
 	case sig := <-sigChan:
-		return xerrors.Errorf("signal, %v interrupted", sig)
+		return errors.Errorf("signal, %v interrupted", sig)
 	}
 
 	select {
 	case err := <-exitChan:
 		var ne host.NodeStderrError
-		if xerrors.As(err, &ne) {
+		if errors.As(err, &ne) {
 			_, _ = fmt.Fprintln(os.Stderr, ne.String())
 		}
 
 		return err
 	case sig := <-sigChan:
-		return xerrors.Errorf("signal, %v interrupted", sig)
+		return errors.Errorf("signal, %v interrupted", sig)
 	case <-func() <-chan time.Time {
 		if cmd.ExitAfter < 1 {
 			cmd.Log().Debug().Msg("will not be expired")
@@ -177,7 +177,7 @@ func (cmd *RunCommand) run() error {
 
 		return time.After(cmd.ExitAfter)
 	}():
-		return xerrors.Errorf("expired with exit-after %s", cmd.ExitAfter)
+		return errors.Errorf("expired with exit-after %s", cmd.ExitAfter)
 	}
 }
 

@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/mitum/util"
 	"github.com/spikeekips/mitum/util/logging"
-	"golang.org/x/xerrors"
 )
 
 type LogWatcher struct {
@@ -27,7 +27,7 @@ type LogWatcher struct {
 
 func NewLogWatcher(mg *Mongodb, sqs []*Sequence, exitChan chan error, vars *config.Vars) (*LogWatcher, error) {
 	if len(sqs) < 1 {
-		return nil, xerrors.Errorf("empty conditions")
+		return nil, errors.Errorf("empty conditions")
 	}
 
 	lw := &LogWatcher{
@@ -182,9 +182,9 @@ func (lw *LogWatcher) getStorage(uri string) (*Mongodb, error) {
 	defer cancel()
 
 	if i, err := NewMongodbFromString(uri); err != nil {
-		return nil, xerrors.Errorf("failed to ready storage: %w", err)
+		return nil, errors.Wrap(err, "failed to ready storage")
 	} else if err := i.Connect(ctx); err != nil {
-		return nil, xerrors.Errorf("failed to connect storage: %w", err)
+		return nil, errors.Wrap(err, "failed to connect storage")
 	} else {
 		l.Debug().Msg("storage connected")
 
