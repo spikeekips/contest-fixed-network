@@ -14,7 +14,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.23.0
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/spikeekips/mitum v0.0.0-20210809154541-63c9ef2326dc
+	github.com/spikeekips/mitum v0.0.0-20210810070012-18707b539903
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.7.0
 	go.uber.org/automaxprocs v1.4.0
