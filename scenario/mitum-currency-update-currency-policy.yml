@@ -70,6 +70,8 @@ node-config:
                   - currency: {{ .OLD_CID }}
                     balance: "100"
 
+        time-server: ""
+
         suffrage:
             nodes:
                 - n0:sa-v0.0.1
