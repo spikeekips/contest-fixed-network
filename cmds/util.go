@@ -3,10 +3,8 @@ package cmds
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"math"
-	"path/filepath"
 	"text/template"
 
 	dockerTypes "github.com/docker/docker/api/types"
@@ -317,12 +315,14 @@ func generateNodesConfig(ctx context.Context, design config.Design, hosts *host.
 	return configs, nil
 }
 
-func saveNodeConfig(node, logDir string, configData, nodesConfig []byte) error {
+func saveNodeConfig(f string, configData, nodesConfig []byte) error {
 	c := configData
 	c = append(c, '\n')
 	c = append(c, nodesConfig...)
 
-	configFile := filepath.Join(logDir, fmt.Sprintf("%s.yml", node))
+	return ioutil.WriteFile(f, c, 0o600)
+}
 
-	return ioutil.WriteFile(configFile, c, 0o600)
+func createNodeLogFile(f string) error {
+	return ioutil.WriteFile(f, nil, 0o600)
 }

@@ -26,7 +26,7 @@ var (
 	ContainerLabelNodeInitType = "init"
 	ContainerLabelNodeRunType  = "run"
 
-	DefaultNodeImage    = "debian:stable-slim"
+	DefaultNodeImage    = "debian:testing-slim"
 	DefaultMongodbImage = "mongo"
 )
 

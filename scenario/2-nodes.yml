@@ -99,9 +99,9 @@ sequences:
               - "{{ .Design.Node.n1.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n0", "x.m": "joined network"}
+        {"node": "n0", "x.m": "joined discovery"}
     - condition: >
-        {"node": "n1", "x.m": "joined network"}
+        {"node": "n1", "x.m": "joined discovery"}
 
     - condition: >
         {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}

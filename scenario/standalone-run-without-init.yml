@@ -85,4 +85,4 @@ sequences:
         {"node": "n0", "x.status_code": 1, "x.m": "start node stopped with error", "x.error": {"$regex": "abnormally exited with status code, 1"}}
 
     - condition: >
-        {"node": "n0", "x.l": "error", "x.error": {"$regex": "empty blocks, but no other nodes; can not sync"}}
+        {"node": "n0", "x.l": "error", "x.error": {"$regex": "empty blocks, but no channels for syncing; can not sync"}}

@@ -13,6 +13,7 @@ type DesignYAML struct {
 	NodesConfig *string                                  `yaml:"nodes-config"`
 	Sequences   []*DesignSequenceYAML
 	ExitOnError *bool `yaml:"exit-on-error"`
+	Skip        *bool
 }
 
 func (de DesignYAML) Merge() (Design, error) {
@@ -119,6 +120,10 @@ func (de DesignYAML) mergeEtc(design Design) (Design, error) { // nolint:unparam
 		design.ExitOnError = true
 	} else {
 		design.ExitOnError = *de.ExitOnError
+	}
+
+	if de.Skip != nil {
+		design.Skip = *de.Skip
 	}
 
 	return design, nil

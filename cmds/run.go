@@ -113,6 +113,12 @@ func (cmd *RunCommand) Run(version util.Version) error {
 
 	var exitError error
 	if err := cmd.run(); err != nil {
+		if errors.Is(err, util.IgnoreError) {
+			cmd.Log().Debug().Err(err).Msg("contest stopped")
+
+			return nil
+		}
+
 		cmd.Log().Error().Err(err).Msg("failed to run contest")
 
 		exitError = err

@@ -63,7 +63,13 @@ func ProcessNodes(ctx context.Context) (context.Context, error) {
 	if err := hosts.TraverseNodes(func(node *host.Node) (bool, error) {
 		vars.Set(fmt.Sprintf("Design.Node.%s", node.Alias()), node.ConfigMap())
 
-		err := saveNodeConfig(node.Alias(), logDir, node.ConfigData(), nodesConfig[node.Alias()])
+		err := saveNodeConfig(node.ConfigFile(), node.ConfigData(), nodesConfig[node.Alias()])
+		if err != nil {
+			return false, err
+		}
+
+		err = createNodeLogFile(node.LogFile())
+
 		return err == nil, err
 	}); err != nil {
 		return ctx, err

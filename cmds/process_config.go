@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spikeekips/mitum/launch/pm"
+	"github.com/spikeekips/mitum/util"
 	"github.com/spikeekips/mitum/util/logging"
 	"gopkg.in/yaml.v3"
 
@@ -52,6 +53,10 @@ func ProcessConfig(ctx context.Context) (context.Context, error) {
 	}
 
 	log.Log().Info().Interface("design", design).Msg("design loaded")
+
+	if design.Skip {
+		return ctx, util.IgnoreError.Errorf("exit silently")
+	}
 
 	return context.WithValue(ctx, config.ContextValueDesign, design), nil
 }

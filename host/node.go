@@ -17,6 +17,7 @@ import (
 
 var DefaultContainerCmdNodeInit = []string{
 	"/runner", "node", "init",
+	"--log", "log",
 	"--log-level", "debug",
 	"--log-format", "json",
 	"/config.yml",
@@ -24,6 +25,7 @@ var DefaultContainerCmdNodeInit = []string{
 
 var DefaultContainerCmdNodeRun = []string{
 	"/runner", "node", "run",
+	"--log", "log",
 	"--log-level", "debug",
 	"--log-format", "json",
 	"/config.yml",
@@ -67,6 +69,10 @@ func (no *Node) ConfigData() []byte {
 
 func (no *Node) ConfigFile() string {
 	return filepath.Join(no.host.BaseDir(), fmt.Sprintf("%s.yml", no.alias))
+}
+
+func (no *Node) LogFile() string {
+	return filepath.Join(no.host.BaseDir(), fmt.Sprintf("%s.log", no.alias))
 }
 
 func (no *Node) ConfigMap() map[string]interface{} {

@@ -37,6 +37,7 @@ type Design struct {
 	NodesConfig      string
 	Sequences        []DesignSequence
 	ExitOnError      bool
+	Skip             bool
 }
 
 func (de *Design) IsValid([]byte) error {

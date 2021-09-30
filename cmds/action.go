@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	"github.com/hpcloud/tail"
 	"github.com/rs/zerolog"
 	"github.com/spikeekips/contest/config"
 	"github.com/spikeekips/contest/host"
@@ -196,14 +197,33 @@ func (*BaseNodesAction) startContainer(ctx context.Context, node *host.Node, id 
 }
 
 func (ac *BaseNodesAction) containerLogs(ctx context.Context, node *host.Node, id string) error {
-	options := dockerTypes.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-		Follow:     true,
-		Tail:       "all",
+	t, err := tail.TailFile(node.LogFile(), tail.Config{Follow: true})
+	if err != nil {
+		return fmt.Errorf("failed to read log file: %w", err)
 	}
 
 	go func() {
+		for l := range t.Lines {
+			if l.Err != nil {
+				break
+			}
+
+			if e, err := host.NewNodeLogEntry(node.Alias(), []byte(l.Text), false); err != nil {
+				ac.Log().Error().Err(err).Msg("failed to create LogEntry")
+			} else {
+				ac.lo.LogEntryChan() <- e
+			}
+		}
+	}()
+
+	go func() {
+		options := dockerTypes.ContainerLogsOptions{
+			ShowStdout: false,
+			ShowStderr: true,
+			Follow:     true,
+			Tail:       "all",
+		}
+
 		err := host.ReadContainerLogs(ctx, node.Host().DockerClient(), id, options, func(status uint8, b []byte) {
 			if e, err := host.NewNodeLogEntry(node.Alias(), b, status == 2); err != nil {
 				ac.Log().Error().Err(err).Msg("failed to create LogEntry")
@@ -290,6 +310,11 @@ func (*BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, erro
 				Source:   dataDir,
 				Target:   "/data",
 				ReadOnly: false,
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: node.LogFile(),
+				Target: "/log",
 			},
 		},
 		PortBindings: node.PortMap(),

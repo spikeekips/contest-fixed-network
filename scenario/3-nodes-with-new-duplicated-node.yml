@@ -5,8 +5,8 @@
 # - all nodes, starts
 # - new node, `n3` starts
 # - `n3` has same node with `n2`, but has different publish url
-# - `n2` suspended
-# - the nodes, except n2 will work successfully
+# - `n3` keeps syncing
+
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
@@ -121,11 +121,11 @@ sequences:
               - "{{ .Design.Node.n2.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n0", "x.m": "joined network"}
+        {"node": "n0", "x.m": "joined discovery"}
     - condition: >
-        {"node": "n1", "x.m": "joined network"}
+        {"node": "n1", "x.m": "joined discovery"}
     - condition: >
-        {"node": "n2", "x.m": "joined network"}
+        {"node": "n2", "x.m": "joined discovery"}
 
     - condition: >
         {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
@@ -144,17 +144,60 @@ sequences:
               - "{{ .Design.Node.n1.Network.URL }}#insecure"
  
     - condition: >
-        {"node": "n3", "x.m": "joined network"}
- 
-    - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
-    - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
-    - condition: >
-        {"node": "n3", "x.m": "new block stored", "x.block.height": 10, "x.block.round": 0}
+        {"node": "n3", "x.m": {"$regex": "duplicated node found"}}
 
-    # NOTE n2 is still joined, but the others, n0, n1 updated the network
-    # info of "n2:sa-v0.0.1" by n3. Naturally n0, n1 will not broadcast it's
-    # ballot, so n2 can not do anyting.
     - condition: >
-        {"node": "n2", "x.m": "new block stored", "x.block.height": {"$lt": 10}, "x.block.round": 0}
+        {"node": "n3", "x.underhandover": true, "x.m": "investigated"}
+
+    - condition: >
+        {"node": "n3", "x.state_context.to": "SYNCING"}
+      register:
+          type: last_match
+          to: n3_underhandover
+
+    - condition: >
+        {"_id": {"$gt": "{{ .Register.n3_underhandover._id }}" }, "node": "n0", "x.m": "new block stored"}
+      register:
+          type: last_match
+          to: n0_new_block
+
+    - condition: >
+        {"_id": {"$gt": "{{ .Register.n3_underhandover._id }}" }, "node": "n0", "x.m": "new block stored"}
+      register:
+          type: last_match
+          to: n1_new_block
+
+    - condition: >
+        {"_id": {"$gt": "{{ .Register.n3_underhandover._id }}" }, "node": "n0", "x.m": "new block stored"}
+      register:
+          type: last_match
+          to: n2_new_block
+
+    - condition: >
+        {
+            "_id": {"$gt": "{{ .Register.n0_new_block._id }}" },
+            "node": "n0",
+            "x.m": "new block stored",
+            "x.block.height": {"$gt": {{ .Register.n0_new_block.x.block.height }} }
+        }
+    - condition: >
+        {
+            "_id": {"$gt": "{{ .Register.n1_new_block._id }}" },
+            "node": "n1",
+            "x.m": "new block stored",
+            "x.block.height": {"$gt": {{ .Register.n1_new_block.x.block.height }} }
+        }
+    - condition: >
+        {
+            "_id": {"$gt": "{{ .Register.n2_new_block._id }}" },
+            "node": "n1",
+            "x.m": "new block stored",
+            "x.block.height": {"$gt": {{ .Register.n2_new_block.x.block.height }} }
+        }
+    - condition: >
+        {
+            "_id": {"$gt": "{{ .Register.n2_new_block._id }}" },
+            "node": "n3",
+            "x.m": "new block stored",
+            "x.block.height": {"$gt": {{ .Register.n2_new_block.x.block.height }} }
+        }
