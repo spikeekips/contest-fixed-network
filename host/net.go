@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	bindPortRange = [2]int64{1025, 65535}
+	bindPortRange = [2]int64{1025, 32767}
 	bindPortLock  sync.RWMutex
 )
 
