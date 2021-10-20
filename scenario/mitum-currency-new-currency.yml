@@ -232,8 +232,7 @@ sequences:
                     "{{ .Account.a0.Privatekey }}" \
                     "{{ .Account.a0.AddressKey }}:mca-v0.0.1" \
                     "{{ .Account.Genesis.AddressKey }}:mca-v0.0.1" \
-                    {{ .CID }} \
-                    10 | {{ .Runtime.Flags.RunnerFile }} seal send \
+                    "{{ .CID }},10" | {{ .Runtime.Flags.RunnerFile }} seal send \
                         --node "{{ .Design.Node.n0.Network.URL }}" \
                         --node "{{ .Design.Node.n1.Network.URL }}" \
                         --node "{{ .Design.Node.n2.Network.URL }}" \
