@@ -154,8 +154,7 @@ sequences:
                     --key "{{ .Account.a0.Publickey }},100" \
                     --threshold 100 \
                     --network-id "{{ .NetworkID }}" \
-                    {{ .CID }} \
-                    40 | {{ .Runtime.Flags.RunnerFile }} seal send \
+                    "{{ .CID }},40" | {{ .Runtime.Flags.RunnerFile }} seal send \
                         --node "{{ .Design.Node.n0.Network.URL }}" \
                         --node "{{ .Design.Node.n1.Network.URL }}" \
                         --node "{{ .Design.Node.n2.Network.URL }}" \
@@ -200,8 +199,7 @@ sequences:
                     --key "{{ .Account.a1.Publickey }},100" \
                     --threshold 100 \
                     --network-id "{{ .NetworkID }}" \
-                    {{ .CID }} \
-                    40 | {{ .Runtime.Flags.RunnerFile }} seal send \
+                    "{{ .CID }},40" | {{ .Runtime.Flags.RunnerFile }} seal send \
                         --node "{{ .Design.Node.n0.Network.URL }}" \
                         --node "{{ .Design.Node.n1.Network.URL }}" \
                         --node "{{ .Design.Node.n2.Network.URL }}" \
