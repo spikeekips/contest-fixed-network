@@ -113,7 +113,7 @@ end:
 			break end
 		case <-ticker.C:
 			count++
-			if err := ls.saveEntries(entries, updated, count); err != nil {
+			if err := ls.saveEntries(entries, updated, count); err != nil { // nolint:contextcheck
 				ls.Log().Error().Err(err).Msg("failed to save log entries")
 
 				continue
@@ -140,7 +140,7 @@ end:
 		}
 	}
 
-	return ls.saveEntries(entries, updated, 1)
+	return ls.saveEntries(entries, updated, 1) // nolint:contextcheck
 }
 
 func (ls *LogSaver) saveToFile(entry LogEntry) (string, error) {

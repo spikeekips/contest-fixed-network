@@ -70,8 +70,8 @@ func (mg *Mongodb) Close(ctx context.Context) error {
 	return mg.client.Disconnect(ctx)
 }
 
-func (mg *Mongodb) Initialize(context.Context) error {
-	return mg.createIndices(colLogEntry, logEntryIndexModel, "contest_")
+func (mg *Mongodb) Initialize(ctx context.Context) error {
+	return mg.createIndices(ctx, colLogEntry, logEntryIndexModel, "contest_")
 }
 
 func (mg *Mongodb) AddLogEntries(ctx context.Context, entries []LogEntry) error {
@@ -110,16 +110,16 @@ func (mg *Mongodb) Find(ctx context.Context, col string, query bson.M) (map[stri
 	}
 }
 
-func (mg *Mongodb) createIndices(col string, models []mongo.IndexModel, prefix string) error {
+func (mg *Mongodb) createIndices(ctx context.Context, col string, models []mongo.IndexModel, prefix string) error {
 	iv := mg.db.Collection(col).Indexes()
 
-	cursor, err := iv.List(context.TODO())
+	cursor, err := iv.List(ctx)
 	if err != nil {
 		return err
 	}
 
 	var results []bson.M
-	if err = cursor.All(context.TODO(), &results); err != nil {
+	if err = cursor.All(ctx, &results); err != nil {
 		return err
 	}
 
@@ -135,7 +135,7 @@ func (mg *Mongodb) createIndices(col string, models []mongo.IndexModel, prefix s
 
 	if len(existings) > 0 {
 		for _, name := range existings {
-			if _, err := iv.DropOne(context.TODO(), name); err != nil {
+			if _, err := iv.DropOne(ctx, name); err != nil {
 				return err
 			}
 		}
@@ -145,7 +145,7 @@ func (mg *Mongodb) createIndices(col string, models []mongo.IndexModel, prefix s
 		return nil
 	}
 
-	if _, err := iv.CreateMany(context.TODO(), models); err != nil {
+	if _, err := iv.CreateMany(ctx, models); err != nil {
 		return err
 	}
 

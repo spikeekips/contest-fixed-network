@@ -106,7 +106,9 @@ func (co *Condition) Query(vars *config.Vars) (bson.M, error) {
 	return co.query, nil
 }
 
-func (co *Condition) Check(vars *config.Vars, getStorage func(string) (*Mongodb, error)) (interface{}, bool, error) {
+func (co *Condition) Check(
+	ctx context.Context, vars *config.Vars, getStorage func(string) (*Mongodb, error),
+) (interface{}, bool, error) {
 	if co.storage == nil {
 		uri := co.storageString
 		if config.IsTemplateCondition(uri) {
@@ -129,7 +131,7 @@ func (co *Condition) Check(vars *config.Vars, getStorage func(string) (*Mongodb,
 		return nil, false, err
 	}
 
-	switch i, found, err := co.storage.Find(context.Background(), co.col, query); {
+	switch i, found, err := co.storage.Find(ctx, co.col, query); {
 	case err != nil:
 		co.Log().Error().Err(err).Msg("failed to find condition")
 

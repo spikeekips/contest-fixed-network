@@ -65,7 +65,7 @@ end:
 				continue
 			}
 
-			if finished, err := lw.evaluate(sq); err != nil {
+			if finished, err := lw.evaluate(ctx, sq); err != nil {
 				stopError = err
 
 				break end
@@ -118,14 +118,14 @@ func (lw *LogWatcher) current() (*Sequence, bool) {
 	return lw.sqs[lw.cl], true
 }
 
-func (lw *LogWatcher) evaluate(sq *Sequence) (bool, error) {
+func (lw *LogWatcher) evaluate(ctx context.Context, sq *Sequence) (bool, error) {
 	lw.Lock()
 	defer lw.Unlock()
 
 	l := lw.Log().With().Interface("condition", sq.Condition().QueryString()).Logger()
 
 	var record interface{}
-	switch i, matched, err := sq.Condition().Check(lw.vars, lw.getStorage); {
+	switch i, matched, err := sq.Condition().Check(ctx, lw.vars, lw.getStorage); {
 	case err != nil:
 		return false, err
 	case !matched:
@@ -146,7 +146,7 @@ func (lw *LogWatcher) evaluate(sq *Sequence) (bool, error) {
 
 	if _, ok := sq.Action().(NullAction); !ok {
 		l.Debug().Interface("action", sq.Action()).Msg("trying to run action")
-		if err := sq.Action().Run(context.Background()); err != nil {
+		if err := sq.Action().Run(ctx); err != nil {
 			l.Error().Err(err).Msg("failed to run action")
 
 			return finished, err

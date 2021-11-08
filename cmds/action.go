@@ -348,7 +348,7 @@ func NewStartNodesAction(ctx context.Context, aliases []string, args []string) (
 }
 
 func (ac *StartNodesAction) Run(ctx context.Context) error {
-	ids, err := filterRunningContainers(ac.nodes, true)
+	ids, err := filterRunningContainers(ctx, ac.nodes, true)
 	if err != nil {
 		return err
 	}
@@ -460,7 +460,7 @@ func NewStopNodesAction(ctx context.Context, aliases []string) (*StopNodesAction
 }
 
 func (ac *StopNodesAction) Run(ctx context.Context) error {
-	ids, err := filterRunningContainers(ac.nodes, false)
+	ids, err := filterRunningContainers(ctx, ac.nodes, false)
 	if err != nil {
 		return err
 	}
@@ -494,7 +494,7 @@ func NewInitNodesAction(ctx context.Context, aliases []string) (*InitNodesAction
 }
 
 func (ac *InitNodesAction) Run(ctx context.Context) error {
-	ids, err := filterRunningContainers(ac.nodes, true)
+	ids, err := filterRunningContainers(ctx, ac.nodes, true)
 	if err != nil {
 		return err
 	}
@@ -531,7 +531,7 @@ func (ac *InitNodesAction) run(ctx context.Context, node *host.Node, id string) 
 		return err
 	}
 
-	msg, err := ac.waitContainer(context.Background(), node, id, container.WaitConditionNotRunning)
+	msg, err := ac.waitContainer(ctx, node, id, container.WaitConditionNotRunning)
 	if err != nil {
 		return err
 	}

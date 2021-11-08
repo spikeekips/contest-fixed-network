@@ -89,7 +89,7 @@ func (ho *LocalHost) Close(ctx context.Context) error {
 	defer ho.Unlock()
 
 	var cs []dockerTypes.Container
-	if err := TraverseContainers(ho.client, func(c dockerTypes.Container) (bool, error) {
+	if err := TraverseContainers(ctx, ho.client, func(c dockerTypes.Container) (bool, error) {
 		if c.State == "running" {
 			cs = append(cs, c)
 		}
@@ -114,7 +114,7 @@ func (ho *LocalHost) Close(ctx context.Context) error {
 // returns error.
 func (ho *LocalHost) Clean(ctx context.Context, dryrun, force bool) error {
 	var cs []dockerTypes.Container
-	if err := TraverseContainers(ho.client, func(c dockerTypes.Container) (bool, error) {
+	if err := TraverseContainers(ctx, ho.client, func(c dockerTypes.Container) (bool, error) {
 		if !force {
 			if c.State == "running" {
 				return false, errors.Errorf("founds still running node container, %q", c.ID)
@@ -294,9 +294,6 @@ func (ho *LocalHost) setRunner(f string) error {
 		source = s
 		sourceStat = fi
 	}
-	defer func() {
-		_ = source.Close()
-	}()
 
 	dest, err := os.OpenFile(
 		filepath.Join(ho.baseDir, "runner"),
@@ -305,9 +302,6 @@ func (ho *LocalHost) setRunner(f string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create new runner file")
 	}
-	defer func() {
-		_ = dest.Close()
-	}()
 
 	buf := make([]byte, 1000000)
 	for {
@@ -323,6 +317,9 @@ func (ho *LocalHost) setRunner(f string) error {
 			return errors.Wrap(err, "failed to copy runner")
 		}
 	}
+
+	_ = source.Close()
+	_ = dest.Close()
 
 	return nil
 }

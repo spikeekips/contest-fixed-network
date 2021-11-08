@@ -44,9 +44,11 @@ func NodeRunContainerName(alias string) string {
 	return fmt.Sprintf("contest-node-run-%s", alias)
 }
 
-func TraverseContainers(client *dockerClient.Client, callback func(dockerTypes.Container) (bool, error)) error {
+func TraverseContainers(
+	ctx context.Context, client *dockerClient.Client, callback func(dockerTypes.Container,
+	) (bool, error)) error {
 	cs, err := client.ContainerList(
-		context.Background(),
+		ctx,
 		dockerTypes.ContainerListOptions{
 			All: true,
 		},

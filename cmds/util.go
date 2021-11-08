@@ -61,7 +61,7 @@ func filterNodes(hosts *host.Hosts, aliases []string) ([]*host.Node, error) {
 	return nodes, nil
 }
 
-func filterRunningContainers(nodes []*host.Node, running bool) (map[string]string, error) {
+func filterRunningContainers(ctx context.Context, nodes []*host.Node, running bool) (map[string]string, error) {
 	ids := map[string]string{}
 	for i := range nodes {
 		ids[nodes[i].Alias()] = ""
@@ -74,7 +74,7 @@ func filterRunningContainers(nodes []*host.Node, running bool) (map[string]strin
 			continue
 		}
 
-		if err := host.TraverseContainers(h.DockerClient(), func(c dockerTypes.Container) (bool, error) {
+		if err := host.TraverseContainers(ctx, h.DockerClient(), func(c dockerTypes.Container) (bool, error) {
 			if c.Labels[host.ContainerLabelNodeType] != host.ContainerLabelNodeRunType {
 				return true, nil
 			}

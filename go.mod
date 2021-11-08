@@ -14,7 +14,7 @@ require (
 	github.com/oklog/ulid v1.3.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.26.0
-	github.com/spikeekips/mitum v0.0.0-20211107060045-c5656552cefd
+	github.com/spikeekips/mitum v0.0.0-20211108023323-7502ac81470e
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.7.4
 	go.uber.org/automaxprocs v1.4.0
