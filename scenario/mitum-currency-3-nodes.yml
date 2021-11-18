@@ -233,7 +233,7 @@ sequences:
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
 
-      # a0 send 10 to a1
+      # a0 sends 10 to a1
       action:
           name: host-command
           args:
@@ -268,7 +268,6 @@ sequences:
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
 
-
       # a0 updates key
       action:
           name: host-command
@@ -296,3 +295,38 @@ sequences:
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
 
+
+      # a0 sends 10 to zero account
+      action:
+          name: host-command
+          args:
+              - |
+                  {{ .Runtime.Flags.RunnerFile }} seal transfer \
+                    --network-id "{{ .NetworkID }}" \
+                    "{{ .Account.a0.NewPrivatekey }}" \
+                    "{{ .Account.a0.AddressKey }}~mca-v0.0.1" \
+                    "{{ .CID }}-X~mca-v0.0.1" \
+                    "{{ .CID }},10" | {{ .Runtime.Flags.RunnerFile }} seal send \
+                        --node "{{ .Design.Node.n0.Network.URL }}" \
+                        --node "{{ .Design.Node.n1.Network.URL }}" \
+                        --node "{{ .Design.Node.n2.Network.URL }}" \
+                        --network-id "{{ .NetworkID }}" \
+                        --tls-insecure \
+                        --seal - \
+                        "{{ .Account.a0.Privatekey }}"
+
+    - condition:
+        query: >
+            {"key": "{{ .Account.a0.AddressKey }}~mca-{{ .CID }}:balance", "d.value.value.amount": "20"}
+        storage: >
+            {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
+        col: state
+      register:
+          type: last_match
+          to: transfer_a0_to_zero
+    - condition:
+        query: >
+            {"key": "{{ .CID }}-X~mca-{{ .CID }}:balance", "d.value.value.amount": "10", "height": {{ .Register.transfer_a0_to_zero.height }} }
+        storage: >
+            {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
+        col: state
