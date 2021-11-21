@@ -37,6 +37,7 @@ node-config:
         {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
+        {{ SetVar "Self.DigestURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "tcp" "54322") ) }}
 
         address: {{ .Self.Address }}
         privatekey: {{ NewKey "Self.Privatekey" "btc" }}
@@ -74,6 +75,11 @@ node-config:
                 - n0~sa-v0.0.1
                 - n1~sa-v0.0.1
                 - n2~sa-v0.0.1
+
+        {{ if eq .Self.Alias "n0" }}digest:
+            network:
+                bind: https://0.0.0.0:54322
+                url: {{ .Self.DigestURL }}{{ end }}
 
         _nodes-config:
             address: {{ .Self.Address }}
@@ -160,6 +166,8 @@ sequences:
                     {{ .CID }} \
                     {{ .CID_Amount }} \
                     "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1" \
+                        | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
+                            "{{ .Design.Node.n0.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
                         | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
                             "{{ .Design.Node.n1.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
                         | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
@@ -293,3 +301,66 @@ sequences:
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
+
+      # suffraage inflation
+      action:
+          name: host-command
+          args:
+              - |
+                  {{ .Runtime.Flags.RunnerFile }} seal suffrage-inflation \
+                    --network-id "{{ .NetworkID }}" \
+                    --token "{{ .NetworkID }}" \
+                    "{{ .Design.Node.n0.Privatekey }}" \
+                    "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1,{{ .CID }},100" \
+                        | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
+                            "{{ .Design.Node.n1.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
+                        | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
+                            "{{ .Design.Node.n2.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
+                        | {{ .Runtime.Flags.RunnerFile }} seal send \
+                            --node "{{ .Design.Node.n0.Network.URL }}" \
+                            --node "{{ .Design.Node.n1.Network.URL }}" \
+                            --node "{{ .Design.Node.n2.Network.URL }}" \
+                            --network-id "{{ .NetworkID }}" \
+                            --seal - \
+                            --tls-insecure \
+                            "{{ .Design.Node.n0.Privatekey }}"
+
+    - condition:
+        query: >
+          {"key": "currencydesign:{{ .CID }}", "d.value.value.aggregate": "200"}
+        storage: >
+            {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
+        col: state
+        register:
+            type: last_match
+            to: suffrage_inflation_done
+
+    - condition: >
+        {"node": "n0"}
+      action:
+          name: host-command
+          args:
+              - |
+                curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/block/operation/3jZZeJaD2zggFcUEtAsXPVZ917Duh74xZpbXLZuoGQV7" | \
+                    jq -e 'select( ._embedded.in_state == true) | .length != 0'
+
+    - condition: >
+        {"node": "n0"}
+      action:
+          name: host-command
+          args:
+              - |
+                curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}" | \
+                    jq -c -r '._embedded.state' && \
+                    curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}" | \
+                    jq -e 'select(._embedded.state == "CONSENSUS") | length != 0'
+
+    - condition: >
+        {"node": "n0"}
+      action:
+          name: host-command
+          args:
+              - |
+                curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/currency/{{ .CID }}" && \
+                    curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/currency/{{ .CID }}" | \
+                    jq -e '._embedded | select( ( .amount.currency == "{{ .CID }}" ) and ( .amount.amount == "100" ) and ( .aggregate == "200" )  ) | length != 0'

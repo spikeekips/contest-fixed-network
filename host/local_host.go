@@ -217,29 +217,11 @@ func (ho *LocalHost) newNodeVars(previous *config.Vars) *config.Vars {
 	return vars
 }
 
-func (ho *LocalHost) AvailablePort(name, network string) (string, error) {
+func (ho *LocalHost) AvailablePort(_, network string) (string, error) {
 	ho.Lock()
 	defer ho.Unlock()
 
-	if port, found := ho.ports[name]; found {
-		return port, nil
-	}
-
-	excludes := make([]string, len(ho.ports))
-
-	var i int
-	for k := range ho.ports {
-		excludes[i] = ho.ports[k]
-		i++
-	}
-
-	port, err := AvailablePort(network, excludes)
-	if err != nil {
-		return "", err
-	}
-	ho.ports[name] = port
-
-	return port, nil
+	return AvailablePort(network, nil)
 }
 
 func (ho *LocalHost) Nodes() map[string]*Node {

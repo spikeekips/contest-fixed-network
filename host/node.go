@@ -146,31 +146,40 @@ func (no *Node) containerBindPort(name, network, sourcePort string) string {
 	no.templateLock.Lock()
 	defer no.templateLock.Unlock()
 
-	port, err := no.host.AvailablePort(name, network)
+	var port string
+	for source := range no.portMap {
+		if string(source) == sourcePort {
+			return no.portMap[source][0].HostPort
+		}
+	}
+
+end0:
+	for {
+		p, err := no.host.AvailablePort(name, network)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, ps := range no.portMap {
+			for i := range ps {
+				if ps[i].HostPort == p {
+					continue end0
+				}
+			}
+		}
+
+		port = p
+
+		break
+	}
+
+	source, err := nat.NewPort(network, sourcePort)
 	if err != nil {
 		panic(err)
 	}
 
-	var found bool
-
-end:
-	for _, ps := range no.portMap {
-		for i := range ps {
-			if ps[i].HostPort == port {
-				found = true
-
-				break end
-			}
-		}
-	}
-	if !found {
-		if source, err := nat.NewPort(network, sourcePort); err != nil {
-			panic(err)
-		} else {
-			no.portMap[source] = []nat.PortBinding{
-				{HostIP: "", HostPort: port},
-			}
-		}
+	no.portMap[source] = []nat.PortBinding{
+		{HostIP: "", HostPort: port},
 	}
 
 	return port
