@@ -140,6 +140,7 @@ sequences:
 
     - condition: >
         {"node": "n0", "x.m": "joined discovery"}
+
     - condition: >
         {"node": "n1", "x.m": "joined discovery"}
     - condition: >
@@ -341,8 +342,24 @@ sequences:
           name: host-command
           args:
               - |
+                curl -v --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/block/operation/3jZZeJaD2zggFcUEtAsXPVZ917Duh74xZpbXLZuoGQV7"
+
+    - condition: >
+        {"node": "n0"}
+      action:
+          name: host-command
+          args:
+              - |
                 curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/block/operation/3jZZeJaD2zggFcUEtAsXPVZ917Duh74xZpbXLZuoGQV7" | \
                     jq -e 'select( ._embedded.in_state == true) | .length != 0'
+
+    - condition: >
+        {"node": "n0"}
+      action:
+          name: host-command
+          args:
+              - |
+                curl -v --insecure "{{ .Design.Node.n0.Digest.Network.URL }}"
 
     - condition: >
         {"node": "n0"}
@@ -354,6 +371,14 @@ sequences:
                     jq -c -r '._embedded.state' && \
                     curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}" | \
                     jq -e 'select(._embedded.state == "CONSENSUS") | length != 0'
+
+    - condition: >
+        {"node": "n0"}
+      action:
+          name: host-command
+          args:
+              - |
+                curl -v --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/currency/{{ .CID }}"
 
     - condition: >
         {"node": "n0"}
