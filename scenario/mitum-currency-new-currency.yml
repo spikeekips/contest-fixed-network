@@ -101,9 +101,6 @@ sequences:
           name: init-nodes
           nodes:
               - n0
-      register:
-          type: last_match
-          to: contest_ready
 
     # check genesis account is created in storage
     - condition:
@@ -332,9 +329,6 @@ sequences:
         storage: >
             {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
         col: state
-        register:
-            type: last_match
-            to: suffrage_inflation_done
 
     - condition: >
         {"node": "n0"}

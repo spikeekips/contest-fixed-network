@@ -93,9 +93,6 @@ sequences:
           name: init-nodes
           nodes:
               - n0
-      register:
-          type: last_match
-          to: contest_ready
 
     # check genesis account is created in storage
     - condition:

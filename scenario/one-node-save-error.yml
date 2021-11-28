@@ -89,9 +89,6 @@ sequences:
           name: init-nodes
           nodes:
               - n0
-      register:
-          type: last_match
-          to: contest_ready
 
     - condition: >
         {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}

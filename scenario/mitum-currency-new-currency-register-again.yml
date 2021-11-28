@@ -1,0 +1,223 @@
+# This scenario will test,
+# - 2 nodes run mitum-currency
+# - 2 nodes with threshold, 100; means all nodes should be agree for new block
+# - all nodes is synced
+# - register new currency
+# - register new currency again; it will be ignored
+
+vars: |
+    {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
+
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok~btc-priv-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG~btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.AddressKey" "9g4BAB8nZdzWmrsAomwdvNJU2hA2psvkfTQ5XdLn4F4r" }}
+
+    {{ SetVar "OLD_CID" "MCC" }}
+    {{ SetVar "CID" "XXX" }}
+    {{ SetVar "CID_Amount" "100" }}
+    {{ SetVar "CID_MinBalance" "10" }}
+    {{ SetVar "CID_FeeerAmount" "3" }}
+
+hosts:
+    - weight: 2
+      host: 172.17.0.1
+      local: true
+
+storage: mongodb://127.0.0.1:27017/contest
+node-config:
+    common: |
+        {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
+        {{ SetVar "Self.DigestURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "tcp" "54322") ) }}
+
+        address: {{ .Self.Address }}
+        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
+        storage:
+            database:
+                uri: {{ .Self.StorageURI }}
+            blockdata:
+                path: /data/blockdata
+                wide-open: true
+        network-id: {{ .NetworkID }}
+        network:
+            bind: https://0.0.0.0:54321
+            url: {{ .Self.NetworkURL }}
+
+        policy:
+            threshold: 100
+
+        genesis-operations:
+            - type: genesis-currencies
+              account-keys:
+                keys:
+                    - publickey: {{ .Account.Genesis.Publickey }}
+                      privatekey: {{ .Account.Genesis.Privatekey }}
+                      weight: 100
+                threshold: 100
+              currencies:
+                  - currency: {{ .OLD_CID }}
+                    balance: "100"
+
+        time-server: ""
+
+        suffrage:
+            nodes:
+                - n0~sa-v0.0.1
+                - n1~sa-v0.0.1
+
+        {{ if eq .Self.Alias "n0" }}digest:
+            network:
+                bind: https://0.0.0.0:54322
+                url: {{ .Self.DigestURL }}{{ end }}
+
+        _nodes-config:
+            address: {{ .Self.Address }}
+            publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
+
+    n0:
+    n1:
+
+nodes-config: |
+    nodes:{{ range $node, $config := .NodesConfig }}
+        - address: {{ index $config "address" }}
+          publickey: {{ index $config "publickey" }}{{ end }}
+
+sequences:
+    - condition: >
+        {"m": "contest ready"}
+      action:
+          name: init-nodes
+          nodes:
+              - n0
+
+    # check genesis account is created in storage
+    - condition:
+        query: >
+            {"key": "{{ .Account.Genesis.AddressKey }}~mca:account", "height": 0, "d.value.value.keys.keys.key": "{{ .Account.Genesis.Publickey }}", "d.value.value.keys.keys.weight": 100, "d.value.value.keys.threshold": 100}
+        storage: >
+            {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
+        col: state
+    - condition:
+        query: >
+            {"key": "{{ .Account.Genesis.AddressKey }}~mca-{{ .OLD_CID }}:balance", "height": 0, "d.value.value.amount": "100"}
+        storage: >
+            {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
+        col: state
+
+    - condition: >
+        {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}
+
+    - condition: >
+        {"node": "n0", "x.m": "genesis block created"}
+      action:
+          name: start-nodes
+          nodes:
+              - n0
+              - n1
+          args:
+              - "--discovery"
+              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "--discovery"
+              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+
+    - condition: >
+        {"node": "n0", "x.m": "joined discovery"}
+
+    - condition: >
+        {"node": "n1", "x.m": "joined discovery"}
+
+    - condition: >
+        {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+    - condition: >
+        {"node": "n1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+      # register new currency
+      action:
+          name: host-command
+          args:
+              - |
+                  {{ .Runtime.Flags.RunnerFile }} seal currency-register \
+                    --network-id "{{ .NetworkID }}" \
+                    --feeer "fixed" \
+                    --feeer-fixed-receiver "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1" \
+                    --feeer-fixed-amount {{ .CID_FeeerAmount }} \
+                    --policy-new-account-min-balance {{ .CID_MinBalance }} \
+                    "{{ .Design.Node.n0.Privatekey }}" \
+                    {{ .CID }} \
+                    {{ .CID_Amount }} \
+                    "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1" \
+                        | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
+                            "{{ .Design.Node.n0.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
+                        | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
+                            "{{ .Design.Node.n1.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
+                        | {{ .Runtime.Flags.RunnerFile }} seal send \
+                            --node "{{ .Design.Node.n0.Network.URL }}" \
+                            --node "{{ .Design.Node.n1.Network.URL }}" \
+                            --network-id "{{ .NetworkID }}" \
+                            --seal - \
+                            --tls-insecure \
+                            "{{ .Account.Genesis.Privatekey }}"
+
+    - condition: >
+        {"node": "n0", "x.m": "currency updated from mitum database", "x.currency.height": {"$gte": 3}, "x.currency.value.value.amount.currency": "{{ .CID }}", "x.currency.value.value.amount.amount": "{{ .CID_Amount }}", "x.currency.value.value.genesis_account": "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1", "x.currency.value.value.policy.new_account_min_balance": "{{ .CID_MinBalance }}", "x.currency.value.value.policy.feeer.type": "fixed", "x.currency.value.value.policy.feeer.amount": "{{ .CID_FeeerAmount }}", "x.currency.value.value.policy.feeer.receiver": "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1"}
+
+      # register new currency again
+      action:
+          name: host-command
+          args:
+              - |
+                  {{ .Runtime.Flags.RunnerFile }} seal currency-register \
+                    --network-id "{{ .NetworkID }}" \
+                    --token "{{ .NetworkID }}" \
+                    --feeer "fixed" \
+                    --feeer-fixed-receiver "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1" \
+                    --feeer-fixed-amount {{ .CID_FeeerAmount }} \
+                    --policy-new-account-min-balance {{ .CID_MinBalance }} \
+                    "{{ .Design.Node.n0.Privatekey }}" \
+                    {{ .CID }} \
+                    200 \
+                    "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1" \
+                        | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
+                            "{{ .Design.Node.n0.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
+                        | {{ .Runtime.Flags.RunnerFile }} seal sign-fact \
+                            "{{ .Design.Node.n1.Privatekey }}" --network-id "{{ .NetworkID }}" --seal=- \
+                        | {{ .Runtime.Flags.RunnerFile }} seal send \
+                            --node "{{ .Design.Node.n0.Network.URL }}" \
+                            --node "{{ .Design.Node.n1.Network.URL }}" \
+                            --network-id "{{ .NetworkID }}" \
+                            --seal - \
+                            --tls-insecure \
+                            "{{ .Account.Genesis.Privatekey }}"
+
+    # last currency-register operation is processed
+    - condition:
+        query: >
+            {"fact_hash": "W6LGeLU1bh56ciU5emKwB2iYURb5LbWZHAm4jDVD2eM"}
+        storage: >
+            {{ .Runtime.Node.n0.Storage.URI }}/contest_n0
+        col: operation
+      register:
+          type: last_match
+          to: last_operation_processed
+      action:
+          name: host-command
+          args:
+              - |
+                curl -v --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/block/operation/W6LGeLU1bh56ciU5emKwB2iYURb5LbWZHAm4jDVD2eM"
+
+    # last currency-register operation is ignored
+    - condition: >
+        {"node": "n0"}
+      action:
+          name: host-command
+          args:
+              - |
+                curl -s --insecure "{{ .Design.Node.n0.Digest.Network.URL }}/block/operation/W6LGeLU1bh56ciU5emKwB2iYURb5LbWZHAm4jDVD2eM" | \
+                    jq -e 'select( ._embedded.in_state == false) | .length != 0'
+
+    - condition: >
+        {"node": "n0", "x.m": "new block stored", "x.block.height": { "$gt": {{ .Register.last_operation_processed.height }} }, "x.block.round": 0}
+
+    - condition: >
+        {"node": "n1", "x.m": "new block stored", "x.block.height": { "$gt": {{ .Register.last_operation_processed.height }} }, "x.block.round": 0}
