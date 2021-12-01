@@ -159,7 +159,7 @@ sequences:
                             "{{ .Account.Genesis.Privatekey }}"
 
     - condition: >
-        {"node": "n1", "x.m": "currency updated from mitum database", "x.currency.height": {"$gte": 3}, "x.currency.value.value.amount.currency": "{{ .CID }}", "x.currency.value.value.amount.amount": "{{ .CID_Amount }}", "x.currency.value.value.genesis_account": "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1", "x.currency.value.value.policy.new_account_min_balance": "{{ .CID_MinBalance }}", "x.currency.value.value.policy.feeer.type": "fixed", "x.currency.value.value.policy.feeer.amount": "{{ .CID_FeeerAmount }}", "x.currency.value.value.policy.feeer.receiver": "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1"}
+        {"node": "n1", "x.m": "currency updated from mitum database", "x.currency.height": {"$gte": 3}, "x.currency.value.value.amount.currency": "{{ .CID }}", "x.currency.value.value.amount.amount": "{{ .CID_Amount }}", "x.currency.value.value.genesis_account": "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1", "x.currency.value.value.policy.new_account_min_balance": "{{ .CID_MinBalance }}", "x.currency.value.value.policy.feeer._hint": "mitum-currency-fixed-feeer-v0.0.1", "x.currency.value.value.policy.feeer.amount": "{{ .CID_FeeerAmount }}", "x.currency.value.value.policy.feeer.receiver": "{{ .Account.Genesis.AddressKey }}~mca-v0.0.1"}
 
     - condition:
         query: >
