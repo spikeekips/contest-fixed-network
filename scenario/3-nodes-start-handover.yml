@@ -1,24 +1,24 @@
 # This scenario will test,
-# - 3 nodes, `n0`, `n1`, `n2`
+# - 3 nodes, `no0`, `no1`, `no2`
 # - threshold is 100
-# - `n0`: *init* before *run*
+# - `no0`: *init* before *run*
 # - all nodes, starts
-# - new node, `n3` starts
-# - `n3` has same node with `n2`, but has different publish url
-# - `n3` starts handover 
-# - `n3` moves to consensus
-# - the duplicated node, `n2` moves to syncing
-# - `n2` starts handover 
-# - `n2` moves to consensus
-# - the duplicated node, `n3` moves to syncing
+# - new node, `no3` starts
+# - `no3` has same node with `no2`, but has different publish url
+# - `no3` starts handover 
+# - `no3` moves to consensus
+# - the duplicated node, `no2` moves to syncing
+# - `no2` starts handover 
+# - `no2` moves to consensus
+# - the duplicated node, `no3` moves to syncing
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok~btc-priv-v0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG~btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjokmpr" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvGmpu" }}
 
-    {{ NewKey "N2Privatekey" "btc" }}
-    {{ SetVar "N2Address" "n2~sa-v0.0.1" }}
+    {{ NewKey "N2Privatekey" }}
+    {{ SetVar "N2Address" "no2sas" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -30,13 +30,13 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%ssas" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
-        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
+        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis") }}
 
         address: {{ .Self.Address }}
-        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        privatekey: {{ NewKey "Self.Privatekey" }}
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             database:
@@ -70,27 +70,27 @@ node-config:
 
         suffrage:
             nodes:
-                - n0~sa-v0.0.1
-                - n1~sa-v0.0.1
-                - n2~sa-v0.0.1
+                - no0sas
+                - no1sas
+                - no2sas
 
         _nodes-config:
-            address: {{ if eq .Self.Alias "n3" }}{{ .N2Address }}{{ else }}{{ .Self.Address }}{{ end }}
-            publickey: {{ if eq .Self.Alias "n3" }}{{ with .N2Privatekey }}{{ .Publickey }}{{ end }}{{ else }}{{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}{{ end }}
+            address: {{ if eq .Self.Alias "no3" }}{{ .N2Address }}{{ else }}{{ .Self.Address }}{{ end }}
+            publickey: {{ if eq .Self.Alias "no3" }}{{ with .N2Privatekey }}{{ .Publickey }}{{ end }}{{ else }}{{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}{{ end }}
 
-    n0:
-    n1:
-    n2: |
+    no0:
+    no1:
+    no2: |
         address: {{ .N2Address }}
         privatekey: {{ .N2Privatekey }}
         publickey: {{ with .N2Privatekey }}{{ .Publickey }}{{ end }}
-    n3: |
+    no3: |
         address: {{ .N2Address }}
         privatekey: {{ .N2Privatekey }}
         publickey: {{ with .N2Privatekey }}{{ .Publickey }}{{ end }}
 
 nodes-config: |
-    nodes:{{ range $node, $config := .NodesConfig }}{{ if ne $node "n3" }}{{ if and ( eq $.Alias "n3" ) ( eq $node "n2" ) }}{{ else }}{{ if eq $node "n2" }}
+    nodes:{{ range $node, $config := .NodesConfig }}{{ if ne $node "no3" }}{{ if and ( eq $.Alias "no3" ) ( eq $node "no2" ) }}{{ else }}{{ if eq $node "no2" }}
         - address: {{ $.N2Address }}
           publickey: {{ with $.N2Privatekey }}{{ .Publickey }}{{ end }}
           {{ else }}
@@ -103,111 +103,111 @@ sequences:
       action:
           name: init-nodes
           nodes:
-              - n0
+              - no0
 
     - condition: >
-        {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}
+        {"node": "no0", "x.status_code": 0, "x.m": "init node stopped without error"}
 
     - condition: >
-        {"node": "n0", "x.m": "genesis block created"}
+        {"node": "no0", "x.m": "genesis block created"}
       action:
           name: start-nodes
           nodes:
-              - n0
-              - n1
-              - n2
+              - no0
+              - no1
+              - no2
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n2.Network.URL }}#insecure"
+              - "{{ .Design.Node.no2.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n0", "x.m": "joined discovery"}
+        {"node": "no0", "x.m": "joined discovery"}
     - condition: >
-        {"node": "n1", "x.m": "joined discovery"}
+        {"node": "no1", "x.m": "joined discovery"}
     - condition: >
-        {"node": "n2", "x.m": "joined discovery"}
+        {"node": "no2", "x.m": "joined discovery"}
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no0", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no1", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
     - condition: >
-        {"node": "n2", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no2", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
       action:
           name: start-nodes
           nodes:
-              - n3
+              - no3
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
  
     - condition: >
-        {"node": "n3", "x.m": {"$regex": "duplicated node found"}}
+        {"node": "no3", "x.m": {"$regex": "duplicated node found"}}
 
     - condition: >
-        {"node": "n3", "x.underhandover": true, "x.m": "investigated"}
+        {"node": "no3", "x.underhandover": true, "x.m": "investigated"}
 
     - condition: >
-        {"node": "n3", "x.state_context.to": "SYNCING"}
+        {"node": "no3", "x.state_context.to": "SYNCING"}
       register:
           type: last_match
-          to: n3_underhandover
+          to: no3_underhandover
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n3_underhandover._id }}" }, "node": "n0", "x.m": "new block stored"}
+        {"_id": {"$gt": "{{ .Register.no3_underhandover._id }}" }, "node": "no0", "x.m": "new block stored"}
       register:
           type: last_match
-          to: n0_new_block
+          to: no0_new_block
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n3_underhandover._id }}" }, "node": "n0", "x.m": "new block stored"}
+        {"_id": {"$gt": "{{ .Register.no3_underhandover._id }}" }, "node": "no0", "x.m": "new block stored"}
       register:
           type: last_match
-          to: n1_new_block_0
+          to: no1_new_block_0
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n3_underhandover._id }}" }, "node": "n0", "x.m": "new block stored"}
+        {"_id": {"$gt": "{{ .Register.no3_underhandover._id }}" }, "node": "no0", "x.m": "new block stored"}
       register:
           type: last_match
-          to: n2_new_block
+          to: no2_new_block
 
     - condition: >
         {
-            "_id": {"$gt": "{{ .Register.n0_new_block._id }}" },
-            "node": "n0",
+            "_id": {"$gt": "{{ .Register.no0_new_block._id }}" },
+            "node": "no0",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n0_new_block.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no0_new_block.x.block.height }} }
         }
     - condition: >
         {
-            "_id": {"$gt": "{{ .Register.n1_new_block_0._id }}" },
-            "node": "n1",
+            "_id": {"$gt": "{{ .Register.no1_new_block_0._id }}" },
+            "node": "no1",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_0.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_0.x.block.height }} }
         }
     - condition: >
         {
-            "_id": {"$gt": "{{ .Register.n2_new_block._id }}" },
-            "node": "n2",
+            "_id": {"$gt": "{{ .Register.no2_new_block._id }}" },
+            "node": "no2",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n2_new_block.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no2_new_block.x.block.height }} }
         }
 
     - condition: >
         {
-            "_id": {"$gt": "{{ .Register.n2_new_block._id }}" },
-            "node": "n3",
+            "_id": {"$gt": "{{ .Register.no2_new_block._id }}" },
+            "node": "no3",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n2_new_block.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no2_new_block.x.block.height }} }
         }
 
-      # start handover to n3
+      # start handover to no3
       action:
           name: host-command
           args:
@@ -218,68 +218,68 @@ sequences:
                     "{{ .N2Address }}" \
                     "{{ .N2Privatekey }}" \
                     "{{ .NetworkID }}" \
-                    "{{ .Design.Node.n3.Network.URL }}" \
+                    "{{ .Design.Node.no3.Network.URL }}" \
                     --tls-insecure
       register:
           type: last_match
-          to: n3_start_handover_request
+          to: no3_start_handover_request
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n3_start_handover_request._id }}" }, "node": "n3", "x.m": {"$regex": "duplicated node found"}}
+        {"_id": {"$gt": "{{ .Register.no3_start_handover_request._id }}" }, "node": "no3", "x.m": {"$regex": "duplicated node found"}}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n3_start_handover_request._id }}" }, "node": "n3", "x.underhandover": true, "x.m": "investigated"}
+        {"_id": {"$gt": "{{ .Register.no3_start_handover_request._id }}" }, "node": "no3", "x.underhandover": true, "x.m": "investigated"}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n3_start_handover_request._id }}" }, "node": "n3", "x.m": "joined discovery"}
+        {"_id": {"$gt": "{{ .Register.no3_start_handover_request._id }}" }, "node": "no3", "x.m": "joined discovery"}
 
     - condition: >
-        {"node": "n3", "x.state_context.from": "SYNCING", "x.state_context.to": "HANDOVER"}
+        {"node": "no3", "x.state_context.from": "SYNCING", "x.state_context.to": "HANDOVER"}
 
     - condition: >
-        {"node": "n3", "x.state_context.from": "HANDOVER", "x.state_context.to": "CONSENSUS"}
+        {"node": "no3", "x.state_context.from": "HANDOVER", "x.state_context.to": "CONSENSUS"}
       register:
           type: last_match
-          to: n3_consensus
+          to: no3_consensus
 
     - condition: >
-        {"node": "n2", "x.state_context.from": "CONSENSUS", "x.state_context.to": "SYNCING"}
+        {"node": "no2", "x.state_context.from": "CONSENSUS", "x.state_context.to": "SYNCING"}
     - condition: >
-        {"node": "n2", "x.m": "left from discovery"}
+        {"node": "no2", "x.m": "left from discovery"}
 
     - condition: >
-        { "_id": {"$gt": "{{ .Register.n3_consensus._id }}" }, "node": "n0", "x.m": "new block stored" }
+        { "_id": {"$gt": "{{ .Register.no3_consensus._id }}" }, "node": "no0", "x.m": "new block stored" }
       register:
           type: last_match
-          to: n1_new_block_0
+          to: no1_new_block_0
 
     - condition: >
         {
-            "node": "n0",
+            "node": "no0",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_0.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_0.x.block.height }} }
         }
     - condition: >
         {
-            "node": "n1",
+            "node": "no1",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_0.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_0.x.block.height }} }
         }
     - condition: >
         {
-            "node": "n2",
+            "node": "no2",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_0.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_0.x.block.height }} }
         }
 
     - condition: >
         {
-            "node": "n3",
+            "node": "no3",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_0.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_0.x.block.height }} }
         }
 
-      # start handover to n2 again
+      # start handover to no2 again
       action:
           name: host-command
           args:
@@ -290,63 +290,63 @@ sequences:
                     "{{ .N2Address }}" \
                     "{{ .N2Privatekey }}" \
                     "{{ .NetworkID }}" \
-                    "{{ .Design.Node.n2.Network.URL }}" \
+                    "{{ .Design.Node.no2.Network.URL }}" \
                     --tls-insecure
       register:
           type: last_match
-          to: n2_start_handover_request
+          to: no2_start_handover_request
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_start_handover_request._id }}" }, "node": "n2", "x.m": {"$regex": "duplicated node found"}}
+        {"_id": {"$gt": "{{ .Register.no2_start_handover_request._id }}" }, "node": "no2", "x.m": {"$regex": "duplicated node found"}}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_start_handover_request._id }}" }, "node": "n2", "x.underhandover": true, "x.m": "investigated"}
+        {"_id": {"$gt": "{{ .Register.no2_start_handover_request._id }}" }, "node": "no2", "x.underhandover": true, "x.m": "investigated"}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_start_handover_request._id }}" }, "node": "n2", "x.m": "joined discovery"}
+        {"_id": {"$gt": "{{ .Register.no2_start_handover_request._id }}" }, "node": "no2", "x.m": "joined discovery"}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_start_handover_request._id }}" }, "node": "n2", "x.state_context.from": "SYNCING", "x.state_context.to": "HANDOVER"}
+        {"_id": {"$gt": "{{ .Register.no2_start_handover_request._id }}" }, "node": "no2", "x.state_context.from": "SYNCING", "x.state_context.to": "HANDOVER"}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_start_handover_request._id }}" }, "node": "n2", "x.state_context.from": "HANDOVER", "x.state_context.to": "CONSENSUS"}
+        {"_id": {"$gt": "{{ .Register.no2_start_handover_request._id }}" }, "node": "no2", "x.state_context.from": "HANDOVER", "x.state_context.to": "CONSENSUS"}
       register:
           type: last_match
-          to: n2_consensus
+          to: no2_consensus
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_start_handover_request._id }}" }, "node": "n3", "x.state_context.from": "CONSENSUS", "x.state_context.to": "SYNCING"}
+        {"_id": {"$gt": "{{ .Register.no2_start_handover_request._id }}" }, "node": "no3", "x.state_context.from": "CONSENSUS", "x.state_context.to": "SYNCING"}
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_start_handover_request._id }}" }, "node": "n3", "x.m": "left from discovery"}
+        {"_id": {"$gt": "{{ .Register.no2_start_handover_request._id }}" }, "node": "no3", "x.m": "left from discovery"}
 
     - condition: >
-        { "_id": {"$gt": "{{ .Register.n2_consensus._id }}" }, "node": "n0", "x.m": "new block stored" }
+        { "_id": {"$gt": "{{ .Register.no2_consensus._id }}" }, "node": "no0", "x.m": "new block stored" }
       register:
           type: last_match
-          to: n1_new_block_1
+          to: no1_new_block_1
 
     - condition: >
         {
-            "node": "n0",
+            "node": "no0",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_1.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_1.x.block.height }} }
         }
     - condition: >
         {
-            "node": "n1",
+            "node": "no1",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_1.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_1.x.block.height }} }
         }
     - condition: >
         {
-            "node": "n2",
+            "node": "no2",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_1.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_1.x.block.height }} }
         }
 
     - condition: >
         {
-            "node": "n3",
+            "node": "no3",
             "x.m": "new block stored",
-            "x.block.height": {"$gt": {{ .Register.n1_new_block_1.x.block.height }} }
+            "x.block.height": {"$gt": {{ .Register.no1_new_block_1.x.block.height }} }
         }

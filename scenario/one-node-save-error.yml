@@ -1,14 +1,14 @@
 # This scenario will test,
 # - 3 nodes with threshold, 100; means all nodes should be agree for new block
 # - all nodes is synced
-# - but `n2` makes error when saves height=3 and round=0
-# - but `n2` will be synced and all nodes moves next height with 0 round
+# - but `no2` makes error when saves height=3 and round=0
+# - but `no2` will be synced and all nodes moves next height with 0 round
 
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok~btc-priv-v0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG~btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjokmpr" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvGmpu" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -20,14 +20,14 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%ssas" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
-        {{ SetVar "Self.Privatekey" (NewKey (printf "key-%s" .Self.Alias) "btc") }}
+        {{ SetVar "Self.Privatekey" (NewKey (printf "key-%s" .Self.Alias)) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
-        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
+        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis") }}
 
         address: {{ .Self.Address }}
-        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        privatekey: {{ NewKey "Self.Privatekey" }}
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             database:
@@ -61,17 +61,17 @@ node-config:
 
         suffrage:
             nodes:
-                - n0~sa-v0.0.1
-                - n1~sa-v0.0.1
-                - n2~sa-v0.0.1
+                - no0sas
+                - no1sas
+                - no2sas
 
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
 
-    n0:
-    n1:
-    n2: |
+    no0:
+    no1:
+    no2: |
         proposal-processor:
             type: error
             when-save:
@@ -88,74 +88,74 @@ sequences:
       action:
           name: init-nodes
           nodes:
-              - n0
+              - no0
 
     - condition: >
-        {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}
+        {"node": "no0", "x.status_code": 0, "x.m": "init node stopped without error"}
 
     - condition: >
-        {"node": "n0", "x.m": "genesis block created"}
+        {"node": "no0", "x.m": "genesis block created"}
       action:
           name: start-nodes
           nodes:
-              - n0
-              - n1
-              - n2
+              - no0
+              - no1
+              - no2
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n2.Network.URL }}#insecure"
+              - "{{ .Design.Node.no2.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no0", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no1", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
     - condition: >
-        {"node": "n2", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no2", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
 
     - condition: >
-        {"node": "n2", "x.m": {"$regex": "save-occurring-error"}, "x.point.type": "error", "x.point.height": 3, "x.point.round": 0}
+        {"node": "no2", "x.m": {"$regex": "save-occurring-error"}, "x.point.type": "error", "x.point.height": 3, "x.point.round": 0}
       register:
           type: last_match
           to: occurred_error
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
+        {"node": "no0", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
+        {"node": "no1", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.occurred_error._id }}" }, "node": "n2", "x.state_context.from": "CONSENSUS", "x.state_context.to": "SYNCING"}
+        {"_id": {"$gt": "{{ .Register.occurred_error._id }}" }, "node": "no2", "x.state_context.from": "CONSENSUS", "x.state_context.to": "SYNCING"}
       register:
           type: last_match
           to: moved_consensus_to_syncing
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.moved_consensus_to_syncing._id }}" }, "node": "n2", "x.m": {"$regex": "syncing finished"}}
+        {"_id": {"$gt": "{{ .Register.moved_consensus_to_syncing._id }}" }, "node": "no2", "x.m": {"$regex": "syncing finished"}}
       register:
           type: last_match
           to: syncing_finished
     - condition: >
-        {"_id": {"$gt": "{{ .Register.moved_consensus_to_syncing._id }}" }, "node": "n2", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
+        {"_id": {"$gt": "{{ .Register.moved_consensus_to_syncing._id }}" }, "node": "no2", "x.m": "new block stored", "x.block.height": 3, "x.block.round": 0}
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.syncing_finished._id }}" }, "node": "n2", "x.state_context.from": "SYNCING", "x.state_context.to": "JOINING"}
+        {"_id": {"$gt": "{{ .Register.syncing_finished._id }}" }, "node": "no2", "x.state_context.from": "SYNCING", "x.state_context.to": "JOINING"}
       register:
           type: last_match
           to: moved_syncing_to_joining
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.moved_syncing_to_joining._id }}" }, "node": "n2", "x.state_context.from": "JOINING", "x.state_context.to": "CONSENSUS"}
+        {"_id": {"$gt": "{{ .Register.moved_syncing_to_joining._id }}" }, "node": "no2", "x.state_context.from": "JOINING", "x.state_context.to": "CONSENSUS"}
       register:
           type: last_match
-          to: n2_back_to_consensus
+          to: no2_back_to_consensus
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_back_to_consensus._id }}" }, "node": "n0", "x.m": "new block stored", "x.block.height": 4, "x.block.round": 0}
+        {"_id": {"$gt": "{{ .Register.no2_back_to_consensus._id }}" }, "node": "no0", "x.m": "new block stored", "x.block.height": 4, "x.block.round": 0}
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_back_to_consensus._id }}" }, "node": "n1", "x.m": "new block stored", "x.block.height": 4, "x.block.round": 0}
+        {"_id": {"$gt": "{{ .Register.no2_back_to_consensus._id }}" }, "node": "no1", "x.m": "new block stored", "x.block.height": 4, "x.block.round": 0}
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_back_to_consensus._id }}" }, "node": "n2", "x.m": "new block stored", "x.block.height": 4, "x.block.round": 0}
+        {"_id": {"$gt": "{{ .Register.no2_back_to_consensus._id }}" }, "node": "no2", "x.m": "new block stored", "x.block.height": 4, "x.block.round": 0}

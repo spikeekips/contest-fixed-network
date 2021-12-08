@@ -1,17 +1,17 @@
 # This scenario will test,
-# - 3 nodes, `n0`, `n1`, `n2`
-# - proposer fixed to `n0`
+# - 3 nodes, `no0`, `no1`, `no2`
+# - proposer fixed to `no0`
 # - threshold is 60; means only 2 nodes can make consensus
-# - `n0`: *init* before *run*
-# - `n0` and `n1` start
-# - `n1` will sync
-# - `n2` starts later
-# - `n2` back to online and stores blocks.
+# - `no0`: *init* before *run*
+# - `no0` and `no1` start
+# - `no1` will sync
+# - `no2` starts later
+# - `no2` back to online and stores blocks.
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok~btc-priv-v0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG~btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjokmpr" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvGmpu" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -23,13 +23,13 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%ssas" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?meaningless=query" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
-        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
+        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis") }}
 
         address: {{ .Self.Address }}
-        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        privatekey: {{ NewKey "Self.Privatekey" }}
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             database:
@@ -66,11 +66,11 @@ node-config:
 
         suffrage:
             type: fixed-suffrage
-            proposer: n0~sa-v0.0.1
+            proposer: no0sas
             nodes:
-                - n0~sa-v0.0.1
-                - n1~sa-v0.0.1
-                - n2~sa-v0.0.1
+                - no0sas
+                - no1sas
+                - no2sas
 
         _nodes-config:
             address: {{ .Self.Address }}
@@ -78,9 +78,9 @@ node-config:
             url: {{ .Self.NetworkURL }}
             tls-insecure: true
 
-    n0:
-    n1:
-    n2:
+    no0:
+    no1:
+    no2:
 
 nodes-config: |
     nodes:{{ range $node, $config := .NodesConfig }}
@@ -94,61 +94,61 @@ sequences:
       action:
           name: init-nodes
           nodes:
-              - n0
+              - no0
 
     - condition: >
-        {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}
+        {"node": "no0", "x.status_code": 0, "x.m": "init node stopped without error"}
 
     - condition: >
-        {"node": "n0", "x.m": "genesis block created"}
+        {"node": "no0", "x.m": "genesis block created"}
       action:
           name: start-nodes
           nodes:
-              - n0
-              - n1
+              - no0
+              - no1
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n2.Network.URL }}#insecure"
+              - "{{ .Design.Node.no2.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n0", "x.m": "joined discovery"}
+        {"node": "no0", "x.m": "joined discovery"}
     - condition: >
-        {"node": "n1", "x.m": "joined discovery"}
+        {"node": "no1", "x.m": "joined discovery"}
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+        {"node": "no0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+        {"node": "no1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
       action:
           name: start-nodes
           nodes:
-              - n2
+              - no2
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n2.Network.URL }}#insecure"
+              - "{{ .Design.Node.no2.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n2", "x.m": "joined discovery"}
+        {"node": "no2", "x.m": "joined discovery"}
 
     - condition: >
-        {"node": "n2", "x.state_context.from": "BOOTING", "x.state_context.to": "SYNCING"}
+        {"node": "no2", "x.state_context.from": "BOOTING", "x.state_context.to": "SYNCING"}
       register:
           type: last_match
-          to: n2_to_syncing
+          to: no2_to_syncing
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_to_syncing._id }}" }, "node": "n2", "x.state_context.from": "SYNCING", "x.state_context.to": "CONSENSUS"}
+        {"_id": {"$gt": "{{ .Register.no2_to_syncing._id }}" }, "node": "no2", "x.state_context.from": "SYNCING", "x.state_context.to": "CONSENSUS"}
       register:
           type: last_match
-          to: n2_back_to_consensus
+          to: no2_back_to_consensus
 
     - condition: >
-        {"_id": {"$gt": "{{ .Register.n2_back_to_consensus._id }}" }, "node": "n2", "x.m": "new block stored"}
+        {"_id": {"$gt": "{{ .Register.no2_back_to_consensus._id }}" }, "node": "no2", "x.m": "new block stored"}

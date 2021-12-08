@@ -1,15 +1,15 @@
 # This scenario will test,
-# - 2 nodes, `n0`, `n1`
+# - 2 nodes, `no0`, `no1`
 # - threshold is 100
-# - `n0`: *init* before *run*
+# - `no0`: *init* before *run*
 # - all nodes, starts
-# - `n1` will sync
+# - `no1` will sync
 # - the nodes will work successfully
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok~btc-priv-v0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG~btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjokmpr" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvGmpu" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -21,12 +21,12 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%ssas" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s?meaningless=query" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
 
         address: {{ .Self.Address }}
-        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        privatekey: {{ NewKey "Self.Privatekey" }}
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             database:
@@ -59,15 +59,15 @@ node-config:
         time-server: ""
         suffrage:
             nodes:
-                - n0~sa-v0.0.1
-                - n1~sa-v0.0.1
+                - no0sas
+                - no1sas
 
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
 
-    n0:
-    n1:
+    no0:
+    no1:
 
 nodes-config: |
     nodes:{{ range $node, $config := .NodesConfig }}
@@ -80,30 +80,30 @@ sequences:
       action:
           name: init-nodes
           nodes:
-              - n0
+              - no0
 
     - condition: >
-        {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}
+        {"node": "no0", "x.status_code": 0, "x.m": "init node stopped without error"}
 
     - condition: >
-        {"node": "n0", "x.m": "genesis block created"}
+        {"node": "no0", "x.m": "genesis block created"}
       action:
           name: start-nodes
           nodes:
-              - n0
-              - n1
+              - no0
+              - no1
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n0", "x.m": "joined discovery"}
+        {"node": "no0", "x.m": "joined discovery"}
     - condition: >
-        {"node": "n1", "x.m": "joined discovery"}
+        {"node": "no1", "x.m": "joined discovery"}
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+        {"node": "no0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+        {"node": "no1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}

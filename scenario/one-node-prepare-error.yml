@@ -1,15 +1,15 @@
 # This scenario will test,
 # - 3 nodes with threshold, 100; means all nodes should be agree for new block
 # - all nodes is synced
-# - but `n2` ocurrs error when prepares height=3 and round=0
-# - n2 still broadcast accept ballot with wrong new block
+# - but `no2` ocurrs error when prepares height=3 and round=0
+# - no2 still broadcast accept ballot with wrong new block
 # - next accept voteproof will be draw
 
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok~btc-priv-v0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG~btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjokmpr" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvGmpu" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -21,13 +21,13 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%ssas" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
-        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis" "btc") }}
+        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis") }}
 
         address: {{ .Self.Address }}
-        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        privatekey: {{ NewKey "Self.Privatekey" }}
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             database:
@@ -61,17 +61,17 @@ node-config:
 
         suffrage:
             nodes:
-                - n0~sa-v0.0.1
-                - n1~sa-v0.0.1
-                - n2~sa-v0.0.1
+                - no0sas
+                - no1sas
+                - no2sas
 
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
 
-    n0:
-    n1:
-    n2: |
+    no0:
+    no1:
+    no2: |
         proposal-processor:
             type: error
             when-prepare:
@@ -88,48 +88,48 @@ sequences:
       action:
           name: init-nodes
           nodes:
-              - n0
+              - no0
 
     - condition: >
-        {"node": "n0", "x.status_code": 0, "x.m": "init node stopped without error"}
+        {"node": "no0", "x.status_code": 0, "x.m": "init node stopped without error"}
 
     - condition: >
-        {"node": "n0", "x.m": "genesis block created"}
+        {"node": "no0", "x.m": "genesis block created"}
       action:
           name: start-nodes
           nodes:
-              - n0
-              - n1
-              - n2
+              - no0
+              - no1
+              - no2
           args:
               - "--discovery"
-              - "{{ .Design.Node.n0.Network.URL }}#insecure"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n1.Network.URL }}#insecure"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
               - "--discovery"
-              - "{{ .Design.Node.n2.Network.URL }}#insecure"
+              - "{{ .Design.Node.no2.Network.URL }}#insecure"
 
     - condition: >
-        {"node": "n0", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no0", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
     - condition: >
-        {"node": "n1", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no1", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
     - condition: >
-        {"node": "n2", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
+        {"node": "no2", "x.m": "new block stored", "x.block.height": 1, "x.block.round": 0}
 
     - condition: >
-        {"node": "n2", "x.m": {"$regex": "prepare-occurring-error"}, "x.point.type": "error", "x.point.height": 3, "x.point.round": 0}
+        {"node": "no2", "x.m": {"$regex": "prepare-occurring-error"}, "x.point.type": "error", "x.point.height": 3, "x.point.round": 0}
 
     - condition: >
-        {"node": "n0", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
+        {"node": "no0", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
     - condition: >
-        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
+        {"node": "no1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
     - condition: >
-        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
+        {"node": "no1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "ACCEPT", "x.voteproof.result": "DRAW", "x.voteproof.height": 3, "x.voteproof.round": 0}
 
     - condition: >
-        {"node": "n0", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
+        {"node": "no0", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
     - condition: >
-        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
+        {"node": "no1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
     - condition: >
-        {"node": "n1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
+        {"node": "no1", "x.module": "basic-states", "x.m": "new voteproof", "x.voteproof.stage": "INIT", "x.voteproof.result": "MAJORITY", "x.voteproof.height": 3, "x.voteproof.round": 1}
 

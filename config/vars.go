@@ -261,7 +261,7 @@ func (vs *Vars) baseFuncMap() template.FuncMap {
 
 			return ""
 		},
-		"NewKey": func(keys, keyType string) key.Privatekey {
+		"NewKey": func(keys string) key.Privatekey {
 			vs.Lock()
 			defer vs.Unlock()
 
@@ -269,22 +269,11 @@ func (vs *Vars) baseFuncMap() template.FuncMap {
 				return i.(key.Privatekey)
 			}
 
-			k := newKey(keyType)
+			k := key.NewBasePrivatekey()
 
 			_ = setVar(vs.m, keys, k)
 
 			return k
 		},
-	}
-}
-
-func newKey(keyType string) key.Privatekey {
-	switch keyType {
-	case "ether":
-		return key.MustNewEtherPrivatekey()
-	case "stellar":
-		return key.MustNewStellarPrivatekey()
-	default: // "btc"
-		return key.MustNewBTCPrivatekey()
 	}
 }

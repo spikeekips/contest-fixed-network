@@ -662,7 +662,7 @@ func (ac *HostCommandAction) Run(ctx context.Context) error {
 
 	ac.Log().Debug().Msg("running command")
 
-	nctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	nctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
 	stdout, stderr, err := ac.local.ShellExec(nctx, "/bin/sh", []string{"-c", compiled})

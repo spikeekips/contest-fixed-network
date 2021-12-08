@@ -1,5 +1,5 @@
 # This scenario will test,
-# - standalone mode, only one node, `n0`
+# - standalone mode, only one node, `no0`
 # - start without *init*
 # - the node will fail to start
 
@@ -8,8 +8,8 @@ exit-on-error: false
 vars: |
     {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
 
-    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjok~btc-priv-v0.0.1" }}
-    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvG~btc-pub-v0.0.1" }}
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjokmpr" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvGmpu" }}
 
     {{ SetVar "CID" "MCC" }}
 
@@ -21,12 +21,12 @@ hosts:
 storage: mongodb://127.0.0.1:27017/contest
 node-config:
     common: |
-        {{ SetVar "Self.Address" ( printf "%s~sa-v0.0.1" .Self.Alias ) }}
+        {{ SetVar "Self.Address" ( printf "%ssas" .Self.Alias ) }}
         {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
         {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
 
         address: {{ .Self.Address }}
-        privatekey: {{ NewKey "Self.Privatekey" "btc" }}
+        privatekey: {{ NewKey "Self.Privatekey" }}
         publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
         storage:
             database:
@@ -60,13 +60,13 @@ node-config:
 
         suffrage:
             nodes:
-                - n0~sa-v0.0.1
+                - no0sas
 
         _nodes-config:
             address: {{ .Self.Address }}
             publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
 
-    n0:
+    no0:
 
 nodes-config: |
     nodes:{{ range $node, $config := .NodesConfig }}
@@ -79,10 +79,10 @@ sequences:
       action:
           name: start-nodes
           nodes:
-              - n0
+              - no0
 
     - condition: >
-        {"node": "n0", "x.status_code": 1, "x.m": "start node stopped with error", "x.error": {"$regex": "abnormally exited with status code, 1"}}
+        {"node": "no0", "x.status_code": 1, "x.m": "start node stopped with error", "x.error": {"$regex": "abnormally exited with status code, 1"}}
 
     - condition: >
-        {"node": "n0", "x.l": "error", "x.error": {"$regex": "empty blocks, but no channels for syncing; can not sync"}}
+        {"node": "no0", "x.l": "error", "x.error": {"$regex": "empty blocks, but no channels for syncing; can not sync"}}
