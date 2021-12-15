@@ -163,7 +163,7 @@ sequences:
 
     - condition:
         query: >
-            {"fact_hash": "4iG1cb93hJHMERGeoyGyKQ7qozNQookdQZygGyetU6dr"}
+            {"fact": "4iG1cb93hJHMERGeoyGyKQ7qozNQookdQZygGyetU6dr"}
         storage: >
             {{ .Runtime.Node.no0.Storage.URI }}/contest_no0
         col: operation
@@ -211,7 +211,7 @@ sequences:
     # last currency-policy-updater operation is processed
     - condition:
         query: >
-            {"fact_hash": "EXD7JHqeKnBCaAKRgGGbquvYxLrrkCcroVF6YM1yNcot"}
+            {"fact": "EXD7JHqeKnBCaAKRgGGbquvYxLrrkCcroVF6YM1yNcot"}
         storage: >
             {{ .Runtime.Node.no0.Storage.URI }}/contest_no0
         col: operation

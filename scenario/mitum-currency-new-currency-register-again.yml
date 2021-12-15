@@ -193,7 +193,7 @@ sequences:
     # last currency-register operation is processed
     - condition:
         query: >
-            {"fact_hash": "BQTih8UZYJv4LeYdc9a38y6AQYtrrGjB8SdVm8F9GX2o"}
+            {"fact": "BQTih8UZYJv4LeYdc9a38y6AQYtrrGjB8SdVm8F9GX2o"}
         storage: >
             {{ .Runtime.Node.no0.Storage.URI }}/contest_no0
         col: operation
