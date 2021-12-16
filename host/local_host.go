@@ -32,7 +32,7 @@ type LocalHost struct {
 	runner             string
 	client             *dockerClient.Client
 	baseDir            string
-	ports              map[string]string
+	ports              []string
 	nodes              map[string]*Node
 	mongodbContainerID string
 	mongodbURI         string
@@ -56,7 +56,6 @@ func NewLocalHost(
 		nodeDesigns: nodeDesigns,
 		runner:      runner,
 		baseDir:     baseDir,
-		ports:       map[string]string{},
 	}
 }
 
@@ -221,7 +220,14 @@ func (ho *LocalHost) AvailablePort(_, network string) (string, error) {
 	ho.Lock()
 	defer ho.Unlock()
 
-	return AvailablePort(network, nil)
+	p, err := AvailablePort(network, ho.ports)
+	if err != nil {
+		return p, err
+	}
+
+	ho.ports = append(ho.ports, p)
+
+	return p, nil
 }
 
 func (ho *LocalHost) Nodes() map[string]*Node {
