@@ -28,8 +28,9 @@ type LoadAction func(context.Context, config.DesignAction) (host.Action, error)
 var ActionLoaders = map[string]LoadAction{
 	"init-nodes":   initNodesActionFunc,
 	"start-nodes":  startNodesActionFunc,
+	"custom-nodes": customNodesActionFunc,
 	"stop-nodes":   stopNodesActionFunc,
-	"stop":         stopActionFunc,
+	"kill":         killActionFunc,
 	"host-command": hostCommandActionFunc,
 }
 
@@ -76,6 +77,30 @@ var startNodesActionFunc = func(ctx context.Context, design config.DesignAction)
 	return NewStartNodesAction(ctx, nodes, design.Args)
 }
 
+var customNodesActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
+	var vars *config.Vars
+	if err := config.LoadVarsContextValue(ctx, &vars); err != nil {
+		return nil, err
+	}
+
+	var hs *host.Hosts
+	if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
+		return nil, err
+	}
+
+	var nodes []string
+	switch i, err := findNodesFromDesign(design); {
+	case err != nil:
+		return nil, err
+	case len(i) < 1:
+		return nil, errors.Errorf("empty nodes")
+	default:
+		nodes = i
+	}
+
+	return NewCustomNodesAction(ctx, nodes, design.Args)
+}
+
 var stopNodesActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
 	var hs *host.Hosts
 	if err := host.LoadHostsContextValue(ctx, &hs); err != nil {
@@ -95,8 +120,18 @@ var stopNodesActionFunc = func(ctx context.Context, design config.DesignAction) 
 	return NewStopNodesAction(ctx, nodes)
 }
 
-var stopActionFunc = func(context.Context, config.DesignAction) (host.Action, error) {
-	return StopAction{}, nil
+var killActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
+	var exitChan chan error
+	if err := LoadExitChanContextValue(ctx, &exitChan); err != nil {
+		return nil, err
+	}
+
+	var err error
+	if es, found := design.Extra["error"]; found {
+		err = errors.Errorf(es.(string))
+	}
+
+	return KillAction{exitChan: exitChan, err: err}, nil
 }
 
 var hostCommandActionFunc = func(ctx context.Context, design config.DesignAction) (host.Action, error) {
@@ -108,9 +143,11 @@ type BaseNodesAction struct {
 	name  string
 	nodes []*host.Node
 	lo    *host.LogSaver
+	vars  *config.Vars
+	args  []string
 }
 
-func NewBaseNodesAction(ctx context.Context, name string, aliases []string) (*BaseNodesAction, error) {
+func NewBaseNodesAction(ctx context.Context, name string, aliases []string, args []string) (*BaseNodesAction, error) {
 	var log *logging.Logging
 	if err := config.LoadLogContextValue(ctx, &log); err != nil {
 		return nil, err
@@ -126,6 +163,11 @@ func NewBaseNodesAction(ctx context.Context, name string, aliases []string) (*Ba
 		return nil, err
 	}
 
+	var vars *config.Vars
+	if err := config.LoadVarsContextValue(ctx, &vars); err != nil {
+		return nil, err
+	}
+
 	nodes, err := filterNodes(hosts, aliases)
 	if err != nil {
 		return nil, err
@@ -138,6 +180,8 @@ func NewBaseNodesAction(ctx context.Context, name string, aliases []string) (*Ba
 		name:  name,
 		nodes: nodes,
 		lo:    lo,
+		vars:  vars,
+		args:  args,
 	}
 
 	_ = action.SetLogging(log)
@@ -284,7 +328,8 @@ func (*BaseNodesAction) mainConfig(node *host.Node, commands []string, t string)
 }
 
 func (*BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, error) {
-	dataDir := filepath.Join(node.Host().BaseDir(), node.Alias())
+	sharedDir := node.Host().BaseDir()
+	dataDir := filepath.Join(sharedDir, node.Alias())
 	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dataDir, 0o700); err != nil {
 			return nil, errors.Errorf("failed to create data directory, %q", dataDir)
@@ -312,6 +357,12 @@ func (*BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, erro
 				ReadOnly: false,
 			},
 			{
+				Type:     mount.TypeBind,
+				Source:   sharedDir,
+				Target:   "/shared",
+				ReadOnly: false,
+			},
+			{
 				Type:   mount.TypeBind,
 				Source: node.LogFile(),
 				Target: "/log",
@@ -324,26 +375,43 @@ func (*BaseNodesAction) hostConfig(node *host.Node) (*container.HostConfig, erro
 	}, nil
 }
 
+func (ac BaseNodesAction) compileArgs() ([]string, error) {
+	if len(ac.args) < 1 {
+		return nil, nil
+	}
+
+	compiled := make([]string, len(ac.args))
+	for i := range ac.args {
+		c, err := ac.compileArg(ac.args[i])
+		if err != nil {
+			return nil, err
+		}
+		compiled[i] = c
+	}
+
+	return compiled, nil
+}
+
+func (ac BaseNodesAction) compileArg(s string) (string, error) {
+	b, err := config.CompileTemplate(s, ac.vars)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to compile arg, %q", s)
+	}
+
+	return string(b), nil
+}
+
 type StartNodesAction struct {
 	*BaseNodesAction
-	vars *config.Vars
-	args []string
 }
 
 func NewStartNodesAction(ctx context.Context, aliases []string, args []string) (*StartNodesAction, error) {
-	var vars *config.Vars
-	if err := config.LoadVarsContextValue(ctx, &vars); err != nil {
-		return nil, err
-	}
-
-	b, err := NewBaseNodesAction(ctx, "start-nodes", aliases)
+	b, err := NewBaseNodesAction(ctx, "start-nodes", aliases, args)
 	if err != nil {
 		return nil, err
 	}
 	return &StartNodesAction{
 		BaseNodesAction: b,
-		vars:            vars,
-		args:            args,
 	}, nil
 }
 
@@ -419,38 +487,12 @@ func (ac StartNodesAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ac.Map())
 }
 
-func (ac StartNodesAction) compileArgs() ([]string, error) {
-	if len(ac.args) < 1 {
-		return nil, nil
-	}
-
-	compiled := make([]string, len(ac.args))
-	for i := range ac.args {
-		c, err := ac.compileArg(ac.args[i])
-		if err != nil {
-			return nil, err
-		}
-		compiled[i] = c
-	}
-
-	return compiled, nil
-}
-
-func (ac StartNodesAction) compileArg(s string) (string, error) {
-	b, err := config.CompileTemplate(s, ac.vars)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to compile arg, %q", s)
-	}
-
-	return string(b), nil
-}
-
 type StopNodesAction struct {
 	*BaseNodesAction
 }
 
 func NewStopNodesAction(ctx context.Context, aliases []string) (*StopNodesAction, error) {
-	b, err := NewBaseNodesAction(ctx, "stop-nodes", aliases)
+	b, err := NewBaseNodesAction(ctx, "stop-nodes", aliases, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -484,7 +526,7 @@ type InitNodesAction struct {
 }
 
 func NewInitNodesAction(ctx context.Context, aliases []string) (*InitNodesAction, error) {
-	b, err := NewBaseNodesAction(ctx, "init-nodes", aliases)
+	b, err := NewBaseNodesAction(ctx, "init-nodes", aliases, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -556,27 +598,109 @@ func (ac InitNodesAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ac.Map())
 }
 
-type StopAction struct{}
+type KillAction struct {
+	exitChan chan error
+	err      error
+}
 
-func (StopAction) Name() string {
+func (KillAction) Name() string {
 	return "stop"
 }
 
-func (StopAction) Run(ctx context.Context) error {
-	var exitChan chan error
-	if err := LoadExitChanContextValue(ctx, &exitChan); err != nil {
-		return err
-	}
-
+func (ac KillAction) Run(_ context.Context) error {
 	go func() {
-		exitChan <- nil
+		ac.exitChan <- ac.err
 	}()
 
 	return nil
 }
 
-func (StopAction) MarshalJSON() ([]byte, error) {
+func (KillAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{"name": "stop"})
+}
+
+type CustomNodesAction struct {
+	*BaseNodesAction
+}
+
+func NewCustomNodesAction(ctx context.Context, aliases []string, args []string) (*CustomNodesAction, error) {
+	b, err := NewBaseNodesAction(ctx, "custom-nodes", aliases, args)
+	if err != nil {
+		return nil, err
+	}
+	return &CustomNodesAction{
+		BaseNodesAction: b,
+	}, nil
+}
+
+func (ac *CustomNodesAction) Run(ctx context.Context) error {
+	ids, err := filterRunningContainers(ctx, ac.nodes, true)
+	if err != nil {
+		return err
+	}
+
+	return host.RunWaitGroup(len(ac.nodes), func(i int) error {
+		id, found := ids[ac.nodes[i].Alias()]
+		if !found {
+			return nil
+		}
+
+		return ac.run(ctx, ac.nodes[i], id)
+	})
+}
+
+func (ac *CustomNodesAction) run(ctx context.Context, node *host.Node, id string) error {
+	args, err := ac.compileArgs()
+	if err != nil {
+		return err
+	}
+
+	cmds := host.CustomNodesActionContainerCmd(args)
+	if len(id) < 1 {
+		id, err = ac.createContainer(
+			ctx,
+			node,
+			cmds,
+			host.NodeCustomContainerName(node.Alias()),
+			"custom",
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	ac.Log().Debug().Strs("commands", cmds).Msg("trying to run custom node")
+
+	if err = ac.startContainer(ctx, node, id); err != nil {
+		return err
+	}
+
+	if err = ac.containerLogs(ctx, node, id); err != nil {
+		return err
+	}
+
+	msg, err := ac.waitContainer(ctx, node, id, container.WaitConditionNotRunning)
+	if err != nil {
+		ac.Log().Error().Err(err).Msg("failed to wait container")
+	}
+
+	if msg.Err != nil {
+		msg.Msg = "custom node stopped with error"
+	} else {
+		msg.Msg = "custom node stopped without error"
+	}
+
+	if e, err := host.NewNodeLogEntryWithInterface(node.Alias(), msg, msg.StatusCode != 0); err != nil {
+		ac.Log().Error().Err(err).Msg("failed to make log entry")
+	} else {
+		ac.lo.LogEntryChan() <- e
+	}
+
+	return nil
+}
+
+func (ac CustomNodesAction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ac.Map())
 }
 
 type HostCommandAction struct {
@@ -622,7 +746,12 @@ func NewHostCommandAction(ctx context.Context, args []string) (host.Action, erro
 
 	action := &HostCommandAction{
 		Logging: logging.NewLogging(func(c zerolog.Context) zerolog.Context {
-			return c.Str("module", "host-command-action").Str("command", args[0][:20])
+			a := args[0]
+			if len(a) > 20 {
+				a = a[:20]
+			}
+
+			return c.Str("module", "host-command-action").Str("command", a)
 		}),
 		command: args[0],
 		vars:    vars,
