@@ -1,0 +1,154 @@
+# This scenario will test,
+# - 3 nodes, `no0`, `no1`, `no2`
+# - threshold is 100
+# - `no0`: *init* before *run*
+# - no1, no2 restores from no0
+# - all nodes, starts
+# - the nodes will work successfully
+vars: |
+    {{ SetVar "NetworkID" "mitum contest; Sat 26 Dec 2020 05:29:13 AM KST" }}
+
+    {{ SetVar "Account.Genesis.Privatekey" "L5GTSKkRs9NPsXwYgACZdodNUJqCAWjz2BccuR4cAgxJumEZWjokmpr" }}
+    {{ SetVar "Account.Genesis.Publickey" "rcrd3KA2wWNhKdAP8rHRzfRmgp91oR9mqopckyXRmCvGmpu" }}
+
+    {{ SetVar "CID" "MCC" }}
+
+hosts:
+    - weight: 2
+      host: 172.17.0.1
+      local: true
+
+storage: mongodb://127.0.0.1:27017/contest
+node-config:
+    common: |
+        {{ SetVar "Self.Address" ( printf "%ssas" .Self.Alias ) }}
+        {{ SetVar "Self.NetworkURL" ( printf "https://%s:%s" .Self.Host (ContainerBindPort (printf "port.bind-%s" .Self.Alias) "udp" "54321") ) }}
+        {{ SetVar "Self.StorageURI" (printf "mongodb://storage:27017/contest_%s" .Self.Alias ) }}
+        {{ SetVar "Genesis.Privatekey" (NewKey "key-genesis") }}
+
+        address: {{ .Self.Address }}
+        privatekey: {{ NewKey "Self.Privatekey" }}
+        publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
+        storage:
+            database:
+                uri: {{ .Self.StorageURI }}
+            blockdata:
+                path: /data/blockdata
+        network-id: {{ .NetworkID }}
+        network:
+            bind: https://0.0.0.0:54321
+            url: {{ .Self.NetworkURL }}
+
+        policy:
+            threshold: 100
+
+        genesis-operations:
+            - type: genesis-currencies
+              account-keys:
+                keys:
+                    - publickey: {{ .Account.Genesis.Publickey }}
+                      privatekey: {{ .Account.Genesis.Privatekey }}
+                      weight: 100
+                threshold: 100
+              currencies:
+                  - currency: {{ .CID }}
+                    balance: "99999999999999999999"
+                    feeer:
+                      type: fixed
+                      amount: 1
+
+        time-server: ""
+
+        suffrage:
+            nodes:
+                - no0sas
+                - no1sas
+                - no2sas
+
+        _nodes-config:
+            address: {{ .Self.Address }}
+            publickey: {{ with .Self.Privatekey }}{{ .Publickey }}{{ end }}
+
+    no0:
+    no1:
+    no2:
+
+nodes-config: |
+    nodes:{{ range $node, $config := .NodesConfig }}
+        - address: {{ index $config "address" }}
+          publickey: {{ index $config "publickey" }}{{ end }}
+
+sequences:
+    - condition: >
+        {"m": "contest ready"}
+      action:
+          name: init-nodes
+          nodes:
+              - no0
+
+    - condition: >
+        {"node": "no0", "x.status_code": 0, "x.m": "init node stopped without error"}
+
+    - condition: >
+        {"node": "no0", "x.m": "genesis block created"}
+      action:
+          name: host-command
+          args:
+              - |
+                  cd {{ .Runtime.Host.BaseDir }} && \
+                      mkdir -p no1 no2 && \
+                      cp -r no0/blockdata no1 && \
+                      cp -r no0/blockdata no2
+
+    # restore from blockdata
+    - condition: "{}"
+      action:
+          name: custom-nodes
+          nodes:
+              - no1
+              - no2
+          args:
+              - storage
+              - restore
+
+    - condition: >
+        {"node": "no1", "x.m": "all blockdata restored"}
+    - condition: >
+        {"node": "no2", "x.m": "all blockdata restored"}
+
+    - condition: >
+        {"node": "no0", "x.m": "genesis block created"}
+      action:
+          name: start-nodes
+          nodes:
+              - no0
+              - no1
+              - no2
+          args:
+              - "--discovery"
+              - "{{ .Design.Node.no0.Network.URL }}#insecure"
+              - "--discovery"
+              - "{{ .Design.Node.no1.Network.URL }}#insecure"
+              - "--discovery"
+              - "{{ .Design.Node.no2.Network.URL }}#insecure"
+              - "--discovery"
+              - "https://findme"
+ 
+    - condition: >
+        {"node": "no0", "x.m": "joined discovery"}
+    - condition: >
+        {"node": "no1", "x.m": "joined discovery"}
+    - condition: >
+        {"node": "no2", "x.m": "joined discovery"}
+ 
+    - condition: >
+        {"node": "no0", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+    - condition: >
+        {"node": "no1", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+    - condition: >
+        {"node": "no2", "x.m": "new block stored", "x.block.height": 2, "x.block.round": 0}
+
+    - condition: >
+        {"node": "no1", "x.state_context.to": {"$ne": "SYNCING"} }
+    - condition: >
+        {"node": "no2", "x.state_context.to": {"$ne": "SYNCING"} }

@@ -150,6 +150,8 @@ func (ho *LocalHost) Prepare(common string, vars *config.Vars) (map[string]inter
 		return nil, err
 	}
 
+	vars.Set("Runtime.Host.BaseDir", ho.baseDir)
+
 	if _, err := os.Stat(filepath.Join(ho.baseDir, "runner")); os.IsNotExist(err) {
 		return nil, errors.Errorf("runner does not exist, setRunner()")
 	}

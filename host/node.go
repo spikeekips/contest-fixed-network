@@ -217,3 +217,16 @@ func (msg NodeExistedMsg) MarshalJSON() ([]byte, error) {
 		"error":       err,
 	})
 }
+
+func CustomNodesActionContainerCmd(args []string) []string {
+	cmds := []string{"/runner"}
+	cmds = append(cmds, args...)
+	cmds = append(cmds,
+		"--log", "log",
+		"--log-level", "debug",
+		"--log-format", "json",
+		"/config.yml",
+	)
+
+	return cmds
+}

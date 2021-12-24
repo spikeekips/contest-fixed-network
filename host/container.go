@@ -44,6 +44,10 @@ func NodeRunContainerName(alias string) string {
 	return fmt.Sprintf("contest-node-run-%s", alias)
 }
 
+func NodeCustomContainerName(alias string) string {
+	return fmt.Sprintf("contest-node-custom-%s-%s", util.UUID().String(), alias)
+}
+
 func TraverseContainers(
 	ctx context.Context, client *dockerClient.Client, callback func(dockerTypes.Container,
 	) (bool, error)) error {
